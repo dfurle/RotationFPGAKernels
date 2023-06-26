@@ -24,16 +24,14 @@ typedef ap_fixed<32,10> internalType;
 // internalType cosFunc(internalType x){
 // 	return 1 - x*x/t2 + x*x*x*x/t4;
 // }
+// void rotationKernel(input_raw_t in1[N_INPUT_1_1], layer1_t out1[N_INPUT_1_1]){
 
+// }
 
-
-void rotationKernel(
-    input_raw_t in1[N_INPUT_1_1],
-    layer1_t out1[N_INPUT_1_1])
-{
-    #pragma HLS INTERFACE m_axi port=in1 bundle=aximm1
-    #pragma HLS INTERFACE m_axi port=out1 bundle=aximm1
-    
+void rotationKernel(input_raw_t in1[N_INPUT_1_1], layer1_t out1[N_INPUT_1_1]){
+// void rotationKernel(input_raw_t in1[N_INPUT_1_1], hls::stream<layer1_t>& out1){
+    // #pragma HLS INTERFACE m_axi port=in1 bundle=aximm1
+    // #pragma HLS INTERFACE m_axi port=out1 bundle=aximm1
 
     input_raw_t input_1[N_INPUT_1_1];
     layer1_t input_out[N_INPUT_1_1];
@@ -103,5 +101,6 @@ ZFlipScale:
     for(int i = 0; i < N_INPUT_1_1; i++){
       #pragma HLS unroll factor=N_INPUT_1_1
       out1[i] = input_out[i];
+      // out1.write(input_out[i]);
     }
 }

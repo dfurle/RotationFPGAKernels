@@ -14,10 +14,12 @@ typedef ap_fixed<16,6> layer1_t;
 extern "C"{
 
 // Prototype of top level function for C-synthesis
-void rotationKernel(
-    input_raw_t* input_1,
-    layer1_t* input_out
-);
+void rotationKernel(input_raw_t* in1, layer1_t* out1);
+// void rotationKernel(input_raw_t* in1, hls::stream<layer1_t>& out1);
+// void rotationKernel(
+//     input_raw_t* input_1,
+//     layer1_t* input_out
+// );
 
 }
 

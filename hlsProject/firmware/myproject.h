@@ -29,12 +29,8 @@
 extern "C"{
   
 // Prototype of top level function for C-synthesis
-void myproject(
-    layer1_t* in1,
-    result_t* out1
-    // input_raw_t input_1[N_INPUT_1_1],
-    // result_t layer9_out[N_LAYER_8]
-);
+// void myproject(hls::stream<layer1_t>& in1_func, result_t* out1_func);
+void myproject(layer1_t* in1, result_t* out1);
 
 }
 

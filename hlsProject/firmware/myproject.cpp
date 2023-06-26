@@ -21,18 +21,17 @@
 // #define __SYNTHESIS__
 
 #include "defines.h"
-#include "myproject.h"
 #include "parameters.h"
+#include "myproject.h"
 
 // #define SWSIM
 
 
-void myproject(layer1_t* in1_func, result_t* out1_func){
-// void myproject(input_raw_t in1[N_INPUT_1_1], result_t out1[N_LAYER_8]){
+// void myproject(hls::stream<layer1_t>& in1_func, result_t* out1_func){
+void myproject(layer1_t in1_func[N_INPUT_1_1], result_t out1_func[N_LAYER_8]){
 
-    #pragma HLS INTERFACE m_axi port=in1_func bundle=aximm1
-    #pragma HLS INTERFACE m_axi port=out1_func bundle=aximm1
-
+    // #pragma HLS INTERFACE m_axi port=in1_func bundle=aximm1
+    // #pragma HLS INTERFACE m_axi port=out1_func bundle=aximm1
 
     layer1_t in1[N_INPUT_1_1];
     result_t out1[N_LAYER_8];
@@ -40,6 +39,7 @@ void myproject(layer1_t* in1_func, result_t* out1_func){
     for(int i = 0; i < N_INPUT_1_1; i++){
       #pragma HLS unroll factor=N_INPUT_1_1
       in1[i] = in1_func[i];
+      // in1[i] = in1_func.read();
     }
 
 
@@ -125,8 +125,8 @@ void myproject(layer1_t* in1_func, result_t* out1_func){
 
     for(int i = 0; i < N_LAYER_8; i++){
       #pragma HLS unroll factor=N_LAYER_8
-      // out1_func[i] = layer9_out[i];
-      out1_func[i] = layer8_out[i];
+      out1_func[i] = layer9_out[i];
+      // out1_func[i] = layer8_out[i];
     }
 
 }

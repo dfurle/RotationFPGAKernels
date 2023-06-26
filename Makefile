@@ -28,7 +28,7 @@ NN_DIR := ${WORK}/hlsProject
 NN_SRC := ${NN_DIR}/firmware/myproject.cpp
 NN_INCLUDE := -I${NN_DIR} -I${NN_DIR}/firmware
 NN_KERNEL := myproject
-$(NN_KERNEL).xo: ${ROTATION_SRC}
+$(NN_KERNEL).xo: ${NN_SRC}
 	mkdir -p ./kernels
 	cd ./kernels; \
 	v++ -c -t $(EMU_MODE) --platform $(PART) --config ${NN_DIR}/config.cfg -k $(NN_KERNEL) $(NN_INCLUDE) ${NN_SRC} -o $(NN_KERNEL).xo; \
