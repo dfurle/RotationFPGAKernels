@@ -26,21 +26,63 @@
 
 // #define SWSIM
 
+#include "rotationKernel.h"
 
+void full_network(input_raw_t in1_func[N_INPUT_1_1], result_t out1_func[N_LAYER_8]){
+
+
+  hls::stream<hls::vector<input_raw_t,N_INPUT_1_1>> in1;
+  hls::stream<hls::vector<layer1_t,N_INPUT_1_1>> rot;
+  hls::stream<hls::vector<result_t,N_LAYER_8>> out1;
+
+  hls::vector<input_raw_t,N_INPUT_1_1> inVec;
+  hls::vector<result_t,N_LAYER_8> outVec;
+
+  for(int i = 0; i < N_INPUT_1_1; i++){
+    #pragma HLS unroll factor=N_INPUT_1_1
+    inVec[i] = in1_func[i];
+  }
+
+  in1 << inVec;
+  
+  rotationKernel(in1, rot);
+  myproject(rot, out1);
+
+  out1 >> outVec;
+
+  for(int i = 0; i < N_LAYER_8; i++){
+    #pragma HLS unroll factor=N_LAYER_8
+    out1_func[i] = outVec[i];
+  }
+
+  // layer1_t rot[N_INPUT_1_1];
+  // rotationKernel(in1_func, rot);
+  // myproject(rot, out1_func);
+}
+
+
+void myproject(hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& in1_func, hls::stream<hls::vector<result_t,N_LAYER_8>>& out1_func){
+// void myproject(hls::stream<layer1_t[N_INPUT_1_1]>& in1_func, hls::stream<result_t[N_LAYER_8]>& out1_func){
 // void myproject(hls::stream<layer1_t>& in1_func, result_t* out1_func){
-void myproject(layer1_t in1_func[N_INPUT_1_1], result_t out1_func[N_LAYER_8]){
+// void myproject(layer1_t in1[N_INPUT_1_1], result_t out1[N_LAYER_8]){
 
     // #pragma HLS INTERFACE m_axi port=in1_func bundle=aximm1
     // #pragma HLS INTERFACE m_axi port=out1_func bundle=aximm1
 
-    layer1_t in1[N_INPUT_1_1];
-    result_t out1[N_LAYER_8];
+    hls::vector<layer1_t,N_INPUT_1_1> in1_vec;
+    hls::vector<result_t,N_LAYER_8> out1_vec;
+    // layer1_t in1[N_INPUT_1_1];
+    // result_t out1[N_LAYER_8];
 
-    for(int i = 0; i < N_INPUT_1_1; i++){
-      #pragma HLS unroll factor=N_INPUT_1_1
-      in1[i] = in1_func[i];
-      // in1[i] = in1_func.read();
-    }
+    in1_func >> in1;
+
+    // for(int i = 0; i < N_INPUT_1_1; i++){
+    //   #pragma HLS unroll factor=N_INPUT_1_1
+    //   // in1[i] = in1_func[i];
+    //   in1[i] = in1_func.read();
+    // }
+
+
 
 
     #pragma HLS ARRAY_RESHAPE variable = in1 complete dim = 0
@@ -85,10 +127,11 @@ void myproject(layer1_t in1_func[N_INPUT_1_1], result_t out1_func[N_LAYER_8]){
     //   input_1[i] = in1[i];
     // }
 
+
     // hls-fpga-machine-learning insert layers
     layer2_t layer2_out[N_LAYER_2];
     #pragma HLS ARRAY_PARTITION variable = layer2_out complete dim = 0
-    nnet::dense<layer1_t, layer2_t, config2>(in1, layer2_out, w2, b2); // dense
+    nnet::dense<layer1_t, layer2_t, config2>(in1.begin(), layer2_out, w2, b2); // dense
 
     layer3_t layer3_out[N_LAYER_2];
     #pragma HLS ARRAY_PARTITION variable = layer3_out complete dim = 0
@@ -106,6 +149,7 @@ void myproject(layer1_t in1_func[N_INPUT_1_1], result_t out1_func[N_LAYER_8]){
     #pragma HLS ARRAY_PARTITION variable = layer6_out complete dim = 0
     nnet::relu<layer5_t, layer6_t, relu_config6>(layer5_out, layer6_out); // dense_1_relu
 
+
     layer7_t layer7_out[N_LAYER_5];
     #pragma HLS ARRAY_PARTITION variable = layer7_out complete dim = 0
     nnet::normalize<layer6_t, layer7_t, config7>(layer6_out, layer7_out, s7, b7); // batch_normalization_1
@@ -122,11 +166,21 @@ void myproject(layer1_t in1_func[N_INPUT_1_1], result_t out1_func[N_LAYER_8]){
     std::cout << "sigmoid input: " << float(layer8_out[0]) << std::endl;
     #endif
 
+    std::cout << float(layer8_out[0]) << std::endl;
 
-    for(int i = 0; i < N_LAYER_8; i++){
-      #pragma HLS unroll factor=N_LAYER_8
-      out1_func[i] = layer9_out[i];
-      // out1_func[i] = layer8_out[i];
-    }
+    // for(int i = 0; i < 1; i++){
+    //   std::cout << float(*(in1.begin() + i)) << std::endl;
+    // }
+
+    out1[0] = layer9_out[0];
+
+    out1_func << out1;
+
+    // for(int i = 0; i < N_LAYER_8; i++){
+    //   #pragma HLS unroll factor=N_LAYER_8
+    //   out1_func.write(layer9_out[i]);
+    //   // out1_func[i] = layer9_out[i];
+    //   // out1_func[i] = layer8_out[i];
+    // }
 
 }

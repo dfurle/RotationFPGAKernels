@@ -48,37 +48,25 @@ int setupDevice(std::vector<cl::Device>& devices, cl::Device& device){
 
 void setupRun(cl::Program& program, cl::Context& context, cl::CommandQueue& q, float *in1, float *out1){
 
-  cl::Kernel rkernel(program, "rotationKernel");
-  cl::Kernel nnkernel(program, "myproject");
-
-  // Compute the size of array in bytes
+  // this could be abstractified in some function/class probably
   size_t in_size = sizeof(ap_fixed<16,11>) * N_INPUT_1_1;
-  size_t out_size = sizeof(ap_fixed<16,6>) * N_INPUT_1_1;
-  size_t out_nn_size = sizeof(ap_fixed<16,6>) * N_LAYER_8;
-
-  std::cout << "in_size:  " << in_size << std::endl;
-  std::cout << "out_size: " << out_size << std::endl;
-  std::cout << "out_nn_size: " << out_nn_size << std::endl;
-
-  // These commands will allocate memory on the Device. The cl::Buffer objects
-  // can be used to reference the memory locations on the device.
   cl::Buffer buffer_a(context, CL_MEM_READ_ONLY, in_size);
-  cl::Buffer buffer_rot(context, CL_MEM_READ_WRITE, out_size);
-  cl::Buffer buffer_result(context, CL_MEM_WRITE_ONLY, out_nn_size);
+  ap_fixed<16,11> *ptr_a = (ap_fixed<16,11> *)q.enqueueMapBuffer(buffer_a, CL_TRUE, CL_MAP_WRITE, 0, in_size);
 
+
+  size_t out_nn_size = sizeof(ap_fixed<16,6>) * N_LAYER_8;
+  cl::Buffer buffer_result(context, CL_MEM_WRITE_ONLY, out_nn_size);
+  ap_fixed<16,6> *ptr_result = (ap_fixed<16,6> *)q.enqueueMapBuffer(buffer_result, CL_TRUE, CL_MAP_READ, 0, out_nn_size);
+
+
+
+  cl::Kernel rkernel(program, "full_network");
+  
   // set the kernel Arguments
   int narg = 0;
   rkernel.setArg(narg++, buffer_a);
-  rkernel.setArg(narg++, buffer_rot);
+  rkernel.setArg(narg++, buffer_result);
 
-  narg = 0;
-  nnkernel.setArg(narg++, buffer_rot);
-  nnkernel.setArg(narg++, buffer_result);
-
-  // We then need to map our OpenCL buffers to get the pointers
-  ap_fixed<16,11> *ptr_a = (ap_fixed<16,11> *)q.enqueueMapBuffer(buffer_a, CL_TRUE, CL_MAP_WRITE, 0, in_size);
-  ap_fixed<16,6> *ptr_rot = (ap_fixed<16,6> *)q.enqueueMapBuffer(buffer_rot, CL_TRUE, CL_MAP_READ, 0, out_size);
-  ap_fixed<16,6> *ptr_result = (ap_fixed<16,6> *)q.enqueueMapBuffer(buffer_result, CL_TRUE, CL_MAP_READ, 0, out_nn_size);
 
   std::cout << "setting input data" << std::endl;
 
@@ -87,7 +75,10 @@ void setupRun(cl::Program& program, cl::Context& context, cl::CommandQueue& q, f
     ptr_a[i] = in1[i];
     std::cout << ptr_a[i] << " ";
   }
-  std::cout << std::endl;
+  std::cout << "\n\n" << std::endl;
+
+  std::cout << "running fpga" << std::endl;
+
 
   // Data will be migrated to kernel space
   q.enqueueMigrateMemObjects({buffer_a}, 0); // 0 means from host
@@ -95,34 +86,18 @@ void setupRun(cl::Program& program, cl::Context& context, cl::CommandQueue& q, f
   // Launch the Kernel
   q.enqueueTask(rkernel);
 
-  // // The result of the previous kernel execution will need to be retrieved in
-  // // order to view the results. This call will transfer the data from FPGA to
-  // // source_results vector
-  // q.enqueueMigrateMemObjects({buffer_rot}, CL_MIGRATE_MEM_OBJECT_HOST);
-
-  // std::cout << "Enqueued rkernel" << std::endl;
-
-
-  // // Data will be migrated to kernel space
-  // q.enqueueMigrateMemObjects({buffer_rot}, 0); // 0 means from host
-
-  // Launch the Kernel
-  q.enqueueTask(nnkernel);
-
-  // The result of the previous kernel execution will need to be retrieved in
-  // order to view the results. This call will transfer the data from FPGA to
-  // source_results vector
+  // This call will transfer the data from FPGA to host array
   q.enqueueMigrateMemObjects({buffer_result}, CL_MIGRATE_MEM_OBJECT_HOST);
 
   q.finish();
 
   // printing out data
-  std::cout << "\n\nNN Out: " << std::endl;
-  for (int i = 0; i < N_INPUT_1_1; i++) {
-    out1[i] = ptr_rot[i];
-    std::cout << out1[i] << " ";
-  }
-  std::cout << "\n\n\n" << std::endl;
+  // std::cout << "\n\nNN Out: " << std::endl;
+  // for (int i = 0; i < N_INPUT_1_1; i++) {
+  //   out1[i] = ptr_rot[i];
+  //   std::cout << out1[i] << " ";
+  // }
+  // std::cout << "\n\n\n" << std::endl;
 
   std::cout << "Result: " << ptr_result[0] << std::endl;
 
@@ -200,7 +175,7 @@ int main(int argc, char *argv[]) {
   }
 
   float* out1 = new float[N_INPUT_1_1];
-  printf("\nRUNNING ROTATION\n\n");
+  printf("\nRUNNING FPGA\n\n");
   setupRun(program, context, q, in1, out1);
 
   std::cout << "Finished" << std::endl;

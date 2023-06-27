@@ -1,6 +1,7 @@
 #include "rotationKernel.h"
 #include <hls_math.h>
 
+
 typedef ap_fixed<32,10> internalType;
 // //typedef ap_fixed<16,6> internalType;
 
@@ -28,18 +29,24 @@ typedef ap_fixed<32,10> internalType;
 
 // }
 
-void rotationKernel(input_raw_t in1[N_INPUT_1_1], layer1_t out1[N_INPUT_1_1]){
+void rotationKernel(hls::stream<hls::vector<input_raw_t,N_INPUT_1_1>>& in1, hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& out1){
+// void rotationKernel(input_raw_t input_1[N_INPUT_1_1], layer1_t input_out[N_INPUT_1_1]){
 // void rotationKernel(input_raw_t in1[N_INPUT_1_1], hls::stream<layer1_t>& out1){
     // #pragma HLS INTERFACE m_axi port=in1 bundle=aximm1
     // #pragma HLS INTERFACE m_axi port=out1 bundle=aximm1
 
-    input_raw_t input_1[N_INPUT_1_1];
-    layer1_t input_out[N_INPUT_1_1];
+    // for stream
 
-    for(int i = 0; i < N_INPUT_1_1; i++){
-      #pragma HLS unroll factor=N_INPUT_1_1
-      input_1[i] = in1[i];
-    }
+    hls::vector<input_raw_t,N_INPUT_1_1> input_1;
+    hls::vector<layer1_t,N_INPUT_1_1> input_out;
+
+    in1 >> input_1;
+
+    // for(int i = 0; i < N_INPUT_1_1; i++){
+    //   #pragma HLS unroll factor=N_INPUT_1_1
+    //   input_1[i] = in1.read();
+    // }
+
 
     // hls-fpga-machine-learning insert IO
     // #pragma HLS ARRAY_RESHAPE variable = input_1 complete dim = 0
@@ -97,10 +104,10 @@ ZFlipScale:
         }
     }
 
-
-    for(int i = 0; i < N_INPUT_1_1; i++){
-      #pragma HLS unroll factor=N_INPUT_1_1
-      out1[i] = input_out[i];
-      // out1.write(input_out[i]);
-    }
+    out1 << input_out;
+    // for(int i = 0; i < N_INPUT_1_1; i++){
+    //   #pragma HLS unroll factor=N_INPUT_1_1
+    //   // out1[i] = input_out[i];
+    //   out1.write(input_out[i]);
+    // }
 }
