@@ -4,7 +4,7 @@
 
 ### Pre-requisites
 
-- Vitis 2023.1
+- Vitis 2023.1 or Vitis 2022.2
 - (probably Ubuntu 22.04)
 - XRT library 2023.1
 - Xilinx u200 board Deployment Target Platform
@@ -19,7 +19,7 @@
 
 ### On every terminal
 
-- `source {Vitis}/2023.1/settings64.sh`
+- `source {Vitis}/2023.1/settings64.sh` or `source {Vitis}/2022.2/settings64.sh`
 - `source /opt/xilinx/xrt/setup.sh`
 
 ### Every change
