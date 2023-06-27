@@ -22,7 +22,7 @@ all: host compile link
 
 HOST_SRC := ${WORK}/host.cpp
 host.exe: $(HOST_SRC)
-	g++ -g -std=c++17 -Wall -O0 $(HOST_SRC) -o ./host.exe -I${XILINX_XRT}/include/ -I${XILINX_VITIS}/../../Vitis_HLS/2023.1/include/ -L${XILINX_XRT}/lib ${LDFLAGS}
+	g++ -g -std=c++17 -Wall -O0 $(HOST_SRC) -o ./host.exe -I${XILINX_XRT}/include/ -I${XILINX_HLS}/include/ -L${XILINX_XRT}/lib ${LDFLAGS}
 	
 NN_DIR := ${WORK}/hlsProject
 NN_SRC := ${NN_DIR}/firmware/myproject.cpp
