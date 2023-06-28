@@ -39,6 +39,8 @@ void rotationKernel(hls::stream<hls::vector<input_raw_t,N_INPUT_1_1>>& in1, hls:
 
     hls::vector<input_raw_t,N_INPUT_1_1> input_1;
     hls::vector<layer1_t,N_INPUT_1_1> input_out;
+    #pragma HLS ARRAY_RESHAPE variable = input_1 complete dim = 0
+    #pragma HLS ARRAY_PARTITION variable = input_out complete dim = 0
 
     in1 >> input_1;
 

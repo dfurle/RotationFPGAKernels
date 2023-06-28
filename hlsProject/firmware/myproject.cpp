@@ -18,7 +18,6 @@
 //
 // #include <iostream>
 
-// #define __SYNTHESIS__
 
 #include "defines.h"
 #include "parameters.h"
@@ -26,10 +25,13 @@
 
 // #define SWSIM
 
+
 #include "rotationKernel.h"
 
 void full_network(input_raw_t in1_func[N_INPUT_1_1], result_t out1_func[N_LAYER_8]){
 
+  // #pragma HLS ARRAY_RESHAPE variable = in1_func complete dim = 0
+  // #pragma HLS ARRAY_RESHAPE variable = out1_func complete dim = 0
 
   hls::stream<hls::vector<input_raw_t,N_INPUT_1_1>> in1;
   hls::stream<hls::vector<layer1_t,N_INPUT_1_1>> rot;
@@ -37,9 +39,11 @@ void full_network(input_raw_t in1_func[N_INPUT_1_1], result_t out1_func[N_LAYER_
 
   hls::vector<input_raw_t,N_INPUT_1_1> inVec;
   hls::vector<result_t,N_LAYER_8> outVec;
+  #pragma HLS ARRAY_RESHAPE variable = inVec complete dim = 0
+  #pragma HLS ARRAY_RESHAPE variable = outVec complete dim = 0
 
   for(int i = 0; i < N_INPUT_1_1; i++){
-    #pragma HLS unroll factor=N_INPUT_1_1
+    #pragma HLS unroll 
     inVec[i] = in1_func[i];
   }
 
@@ -51,7 +55,7 @@ void full_network(input_raw_t in1_func[N_INPUT_1_1], result_t out1_func[N_LAYER_
   out1 >> outVec;
 
   for(int i = 0; i < N_LAYER_8; i++){
-    #pragma HLS unroll factor=N_LAYER_8
+    #pragma HLS unroll
     out1_func[i] = outVec[i];
   }
 
@@ -69,12 +73,24 @@ void myproject(hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& in1_func, hls::st
     // #pragma HLS INTERFACE m_axi port=in1_func bundle=aximm1
     // #pragma HLS INTERFACE m_axi port=out1_func bundle=aximm1
 
+    layer1_t in1[N_INPUT_1_1];
+    result_t out1[N_LAYER_8];
+
+    #pragma HLS ARRAY_RESHAPE variable = in1 complete dim = 0
+    #pragma HLS ARRAY_PARTITION variable = out1 complete dim = 0
+    #pragma HLS PIPELINE
+
     hls::vector<layer1_t,N_INPUT_1_1> in1_vec;
     hls::vector<result_t,N_LAYER_8> out1_vec;
-    // layer1_t in1[N_INPUT_1_1];
-    // result_t out1[N_LAYER_8];
+    #pragma HLS ARRAY_RESHAPE variable = in1_vec complete dim = 0
+    #pragma HLS ARRAY_PARTITION variable = out1_vec complete dim = 0
+    in1_func >> in1_vec;
 
-    in1_func >> in1;
+    for(int i = 0; i < N_INPUT_1_1; i++){
+      #pragma HLS UNROLL
+      in1[i] = in1_vec[i];
+    }
+
 
     // for(int i = 0; i < N_INPUT_1_1; i++){
     //   #pragma HLS unroll factor=N_INPUT_1_1
@@ -84,10 +100,6 @@ void myproject(hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& in1_func, hls::st
 
 
 
-
-    #pragma HLS ARRAY_RESHAPE variable = in1 complete dim = 0
-    #pragma HLS ARRAY_PARTITION variable = out1 complete dim = 0
-    #pragma HLS PIPELINE
 
     // hls-fpga-machine-learning insert IO
     // #pragma HLS ARRAY_RESHAPE variable = input_in_raw complete dim = 0
@@ -131,7 +143,17 @@ void myproject(hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& in1_func, hls::st
     // hls-fpga-machine-learning insert layers
     layer2_t layer2_out[N_LAYER_2];
     #pragma HLS ARRAY_PARTITION variable = layer2_out complete dim = 0
-    nnet::dense<layer1_t, layer2_t, config2>(in1.begin(), layer2_out, w2, b2); // dense
+    nnet::dense<layer1_t, layer2_t, config2>(in1, layer2_out, w2, b2); // dense
+
+
+    // std::cout << "in1" << std::endl;
+    // for(int i = 0; i < 24; i++){
+    //   std::cout << float(in1[i]) << std::endl;
+    // }
+    // std::cout << "layer2" << std::endl;
+    // for(int i = 0; i < 24; i++){
+    //   std::cout << float(layer2_out[i]) << std::endl;
+    // }
 
     layer3_t layer3_out[N_LAYER_2];
     #pragma HLS ARRAY_PARTITION variable = layer3_out complete dim = 0
@@ -166,7 +188,7 @@ void myproject(hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& in1_func, hls::st
     std::cout << "sigmoid input: " << float(layer8_out[0]) << std::endl;
     #endif
 
-    std::cout << float(layer8_out[0]) << std::endl;
+    // std::cout << float(layer8_out[0]) << std::endl;
 
     // for(int i = 0; i < 1; i++){
     //   std::cout << float(*(in1.begin() + i)) << std::endl;
@@ -174,7 +196,13 @@ void myproject(hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& in1_func, hls::st
 
     out1[0] = layer9_out[0];
 
-    out1_func << out1;
+
+    for(int i = 0; i < N_LAYER_8; i++){
+      #pragma HLS unroll
+      out1_vec[i] = out1[i];
+    }
+
+    out1_func << out1_vec;
 
     // for(int i = 0; i < N_LAYER_8; i++){
     //   #pragma HLS unroll factor=N_LAYER_8

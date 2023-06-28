@@ -89,6 +89,8 @@ void setupRun(cl::Program& program, cl::Context& context, cl::CommandQueue& q, f
   // This call will transfer the data from FPGA to host array
   q.enqueueMigrateMemObjects({buffer_result}, CL_MIGRATE_MEM_OBJECT_HOST);
 
+  std::cout << "calling finish" << std::endl; 
+
   q.finish();
 
   // printing out data
