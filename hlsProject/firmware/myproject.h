@@ -22,9 +22,10 @@
 
 // #include "ap_int.h"
 // #include "ap_fixed.h"
-// #include "hls_stream.h"
 
-// #include "defines.h"
+#include "defines.h"
+
+#include "hls_stream.h"
 #include "hls_vector.h"
 
 extern "C"{
@@ -32,8 +33,13 @@ extern "C"{
 // Prototype of top level function for C-synthesis
 // void myproject(hls::stream<layer1_t>& in1_func, result_t* out1_func);
 void full_network(input_raw_t* in1_func, result_t* out1_func);
+// void full_network(input_raw_t in1_func[N_INPUT_1_1], result_t out1_func[N_LAYER_8]);
 // void myproject(hls::stream<layer1_t[N_INPUT_1_1]>& in1_func, hls::stream<result_t[N_LAYER_8]>& out1_func){
+
+
 void myproject(hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& in1_func, hls::stream<hls::vector<result_t,N_LAYER_8>>& out1_func);
+
+
 // void myproject(hls::stream<layer1_t>& in1_func, hls::stream<result_t>& out1_func);
 // void myproject(layer1_t* in1, result_t* out1);
 

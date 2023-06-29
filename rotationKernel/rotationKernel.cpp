@@ -32,84 +32,79 @@ typedef ap_fixed<32,10> internalType;
 void rotationKernel(hls::stream<hls::vector<input_raw_t,N_INPUT_1_1>>& in1, hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& out1){
 // void rotationKernel(input_raw_t input_1[N_INPUT_1_1], layer1_t input_out[N_INPUT_1_1]){
 // void rotationKernel(input_raw_t in1[N_INPUT_1_1], hls::stream<layer1_t>& out1){
-    // #pragma HLS INTERFACE m_axi port=in1 bundle=aximm1
-    // #pragma HLS INTERFACE m_axi port=out1 bundle=aximm1
+  // #pragma HLS INLINE
+  // #pragma HLS INTERFACE m_axi port=in1 bundle=aximm1
+  // #pragma HLS INTERFACE m_axi port=out1 bundle=aximm1
+  #pragma HLS PIPELINE
 
-    // for stream
+  hls::vector<input_raw_t,N_INPUT_1_1> input_1;
+  hls::vector<layer1_t,N_INPUT_1_1> input_out;
+  #pragma HLS ARRAY_RESHAPE variable = input_1 complete dim = 0
+  #pragma HLS ARRAY_PARTITION variable = input_out complete dim = 0
 
-    hls::vector<input_raw_t,N_INPUT_1_1> input_1;
-    hls::vector<layer1_t,N_INPUT_1_1> input_out;
-    #pragma HLS ARRAY_RESHAPE variable = input_1 complete dim = 0
-    #pragma HLS ARRAY_PARTITION variable = input_out complete dim = 0
+  in1 >> input_1;
 
-    in1 >> input_1;
-
-    // for(int i = 0; i < N_INPUT_1_1; i++){
-    //   #pragma HLS unroll factor=N_INPUT_1_1
-    //   input_1[i] = in1.read();
-    // }
+  // for(int i = 0; i < N_INPUT_1_1; i++){
+  //   #pragma HLS unroll factor=N_INPUT_1_1
+  //   input_1[i] = in1.read();
+  // }
 
 
-    // hls-fpga-machine-learning insert IO
-    // #pragma HLS ARRAY_RESHAPE variable = input_1 complete dim = 0
-    // #pragma HLS ARRAY_PARTITION variable = input_out complete dim = 0
-    // #pragma HLS INTERFACE ap_vld port = input_1
-    // #pragma HLS dataflow
+  // hls-fpga-machine-learning insert IO
+  // #pragma HLS ARRAY_RESHAPE variable = input_1 complete dim = 0
+  // #pragma HLS ARRAY_PARTITION variable = input_out complete dim = 0
+  // #pragma HLS INTERFACE ap_vld port = input_1
+  // #pragma HLS dataflow
 
-    const internalType pi = 3.14;
-    const internalType _XScale = 0.000936329588;
-    const internalType _YScale = 0.000936329588;
-    const internalType _ZScale = 0.0003305238804;
+  const internalType pi = 3.14;
+  const internalType _XScale = 0.000936329588;
+  const internalType _YScale = 0.000936329588;
+  const internalType _ZScale = 0.0003305238804;
 
-    bool flipZ = (input_1[0] > 0);
-    internalType rotateAngle = hls::atan(input_1[0] / input_1[8]);
-    // internalType rotateAngle = atanFunc(input_1[0] / input_1[8]);
-    if (input_1[7] < 0)
-        rotateAngle = rotateAngle + pi;
+  bool flipZ = (input_1[0] > 0);
+  internalType rotateAngle = hls::atan(input_1[0] / input_1[8]);
+  // internalType rotateAngle = atanFunc(input_1[0] / input_1[8]);
+  if (input_1[7] < 0)
+    rotateAngle = rotateAngle + pi;
 
-    internalType cos_angle = hls::cos(rotateAngle);
-    internalType sin_angle = hls::sin(rotateAngle);
-    // internalType cos_angle = cosFunc(rotateAngle);
-    // internalType sin_angle = sinFunc(rotateAngle);
+  internalType cos_angle = hls::cos(rotateAngle);
+  internalType sin_angle = hls::sin(rotateAngle);
+  // internalType cos_angle = cosFunc(rotateAngle);
+  // internalType sin_angle = sinFunc(rotateAngle);
 
 XYRotation:
-    for (int i = 0; i < 8; i++)
-    {
-        #pragma HLS unroll factor = 8 skip_exit_check
-		// #pragma HLS unroll factor = 8 region skip_exit_check
+  for (int i = 0; i < 8; i++){
+    #pragma HLS unroll factor = 8 skip_exit_check
+    // #pragma HLS unroll factor = 8 region skip_exit_check
 
-        int yIndex = i + 8;
-        // rotating/flipping
+    int yIndex = i + 8;
+    // rotating/flipping
 
-        // rotating/flipping
-        // input_out[i] =  input_1[i]*_XScale;
-        // input_out[yIndex] = input_1[yIndex]*_YScale;
+    // rotating/flipping
+    // input_out[i] =  input_1[i]*_XScale;
+    // input_out[yIndex] = input_1[yIndex]*_YScale;
 
-        input_out[i]      = (input_1[i] * cos_angle - input_1[yIndex] * sin_angle) * _XScale;
-        input_out[yIndex] = (input_1[i] * sin_angle + input_1[yIndex] * cos_angle) * _YScale;
-    }
+    input_out[i]      = (input_1[i] * cos_angle - input_1[yIndex] * sin_angle) * _XScale;
+    input_out[yIndex] = (input_1[i] * sin_angle + input_1[yIndex] * cos_angle) * _YScale;
+  }
 ZFlipScale:
-    for (int i = 0; i < 8; i++)
-    {
-        #pragma HLS unroll factor = 8 skip_exit_check
-        // #pragma HLS unroll factor = 8 region skip_exit_check
-        int index = i + 16;
-        // rotating/flipping
-        // input_out[index] = input_1[index]*_ZScale;
-        if (flipZ)
-        {
-            input_out[index] = -1 * input_1[index] * _ZScale;
-        }
-        else
-        {
-            input_out[index] = input_1[index] * _ZScale;
-        }
+  for (int i = 0; i < 8; i++){
+    #pragma HLS unroll factor = 8 skip_exit_check
+    // #pragma HLS unroll factor = 8 region skip_exit_check
+    int index = i + 16;
+    // rotating/flipping
+    // input_out[index] = input_1[index]*_ZScale;
+    if (flipZ){
+        input_out[index] = -1 * input_1[index] * _ZScale;
+    }else{
+        input_out[index] = input_1[index] * _ZScale;
     }
+  }
 
-    out1 << input_out;
-    // for(int i = 0; i < N_INPUT_1_1; i++){
-    //   #pragma HLS unroll factor=N_INPUT_1_1
-    //   // out1[i] = input_out[i];
-    //   out1.write(input_out[i]);
-    // }
+  out1 << input_out;
+  // for(int i = 0; i < N_INPUT_1_1; i++){
+  //   #pragma HLS unroll factor=N_INPUT_1_1
+  //   // out1[i] = input_out[i];
+  //   out1.write(input_out[i]);
+  // }
 }

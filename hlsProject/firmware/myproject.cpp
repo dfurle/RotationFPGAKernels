@@ -29,9 +29,12 @@
 #include "rotationKernel.h"
 
 void full_network(input_raw_t in1_func[N_INPUT_1_1], result_t out1_func[N_LAYER_8]){
+  // #pragma HLS INTERFACE m_axi port=in1_func bundle=aximm1
+  // #pragma HLS INTERFACE m_axi port=out1_func bundle=aximm1
 
   // #pragma HLS ARRAY_RESHAPE variable = in1_func complete dim = 0
   // #pragma HLS ARRAY_RESHAPE variable = out1_func complete dim = 0
+  // #pragma HLS PIPELINE
 
   hls::stream<hls::vector<input_raw_t,N_INPUT_1_1>> in1;
   hls::stream<hls::vector<layer1_t,N_INPUT_1_1>> rot;
@@ -69,27 +72,17 @@ void myproject(hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& in1_func, hls::st
 // void myproject(hls::stream<layer1_t[N_INPUT_1_1]>& in1_func, hls::stream<result_t[N_LAYER_8]>& out1_func){
 // void myproject(hls::stream<layer1_t>& in1_func, result_t* out1_func){
 // void myproject(layer1_t in1[N_INPUT_1_1], result_t out1[N_LAYER_8]){
+  // #pragma HLS INLINE
 
     // #pragma HLS INTERFACE m_axi port=in1_func bundle=aximm1
     // #pragma HLS INTERFACE m_axi port=out1_func bundle=aximm1
 
-    layer1_t in1[N_INPUT_1_1];
-    result_t out1[N_LAYER_8];
-
+    hls::vector<layer1_t,N_INPUT_1_1> in1;
+    hls::vector<result_t,N_LAYER_8> out1;
     #pragma HLS ARRAY_RESHAPE variable = in1 complete dim = 0
     #pragma HLS ARRAY_PARTITION variable = out1 complete dim = 0
     #pragma HLS PIPELINE
-
-    hls::vector<layer1_t,N_INPUT_1_1> in1_vec;
-    hls::vector<result_t,N_LAYER_8> out1_vec;
-    #pragma HLS ARRAY_RESHAPE variable = in1_vec complete dim = 0
-    #pragma HLS ARRAY_PARTITION variable = out1_vec complete dim = 0
-    in1_func >> in1_vec;
-
-    for(int i = 0; i < N_INPUT_1_1; i++){
-      #pragma HLS UNROLL
-      in1[i] = in1_vec[i];
-    }
+    in1_func >> in1;
 
 
     // for(int i = 0; i < N_INPUT_1_1; i++){
@@ -143,7 +136,10 @@ void myproject(hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& in1_func, hls::st
     // hls-fpga-machine-learning insert layers
     layer2_t layer2_out[N_LAYER_2];
     #pragma HLS ARRAY_PARTITION variable = layer2_out complete dim = 0
-    nnet::dense<layer1_t, layer2_t, config2>(in1, layer2_out, w2, b2); // dense
+
+    // this seems to work, gives pointer to the data,
+    //  atleast it outputs a value of 0.999 for the output...
+    nnet::dense<layer1_t, layer2_t, config2>(in1.begin(), layer2_out, w2, b2); // dense
 
 
     // std::cout << "in1" << std::endl;
@@ -194,15 +190,12 @@ void myproject(hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& in1_func, hls::st
     //   std::cout << float(*(in1.begin() + i)) << std::endl;
     // }
 
+    // TODO: figure out how to quickly write to vector from array...
+    // probably best to just loop/unroll? but im not sure
+    // out1.data = layer9_out;
     out1[0] = layer9_out[0];
 
-
-    for(int i = 0; i < N_LAYER_8; i++){
-      #pragma HLS unroll
-      out1_vec[i] = out1[i];
-    }
-
-    out1_func << out1_vec;
+    out1_func << out1;
 
     // for(int i = 0; i < N_LAYER_8; i++){
     //   #pragma HLS unroll factor=N_LAYER_8
