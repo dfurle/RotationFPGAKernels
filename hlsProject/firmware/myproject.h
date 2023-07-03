@@ -22,19 +22,30 @@
 
 // #include "ap_int.h"
 // #include "ap_fixed.h"
-// #include "hls_stream.h"
 
 #include "defines.h"
 
+#include "hls_stream.h"
+#include "hls_vector.h"
+
+#include "rotationKernel.h"
+
 extern "C"{
-  
 // Prototype of top level function for C-synthesis
-void myproject(
-    layer1_t* in1,
-    result_t* out1
-    // input_raw_t input_1[N_INPUT_1_1],
-    // result_t layer9_out[N_LAYER_8]
-);
+void full_network(input_raw_t* in1_stream, result_t* out1_stream);
+
+#ifdef STREAM
+void myproject(hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& in1_stream, hls::stream<hls::vector<result_t,N_LAYER_8>>& out1_stream);
+#endif
+#ifdef VECTOR
+void myproject(hls::vector<layer1_t,N_INPUT_1_1>& in1_stream, hls::vector<result_t,N_LAYER_8>& out1_stream);
+#endif
+#ifdef ARRAY
+void myproject(layer1_t* in1, result_t* out1);
+#endif
+#ifdef MIDSTREAM
+void myproject(hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& in1_stream, result_t* out1_stream);
+#endif
 
 }
 

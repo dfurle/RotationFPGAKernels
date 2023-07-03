@@ -16,6 +16,8 @@
 #include "nnet_utils/nnet_dense_compressed.h"
 #include "nnet_utils/nnet_dense_stream.h"
  
+
+// #define __SYNTHESIS__
 //hls-fpga-machine-learning insert weights
 #include "weights/w2.h"
 #include "weights/b2.h"
@@ -27,6 +29,7 @@
 #include "weights/b7.h"
 #include "weights/w8.h"
 #include "weights/b8.h"
+// #undef __SYNTHESIS__
 
 //hls-fpga-machine-learning insert layer-config
 // dense

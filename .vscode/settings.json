@@ -3,6 +3,8 @@
     "/opt/xilinx/xrt/include",
     "${XILINX_HLS}/include/",
     "${XILINX_HLS}/include/etc/",
+    "${workspaceFolder}/hlsProject/firmware",
     "${workspaceFolder}/rotationKernel",
+    "${workspaceFolder}",
   ]
 }
