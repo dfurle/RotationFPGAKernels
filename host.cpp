@@ -176,7 +176,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  float* out1 = new float[N_INPUT_1_1];
+  float* out1 = new float[N_LAYER_8];
   printf("\nRUNNING FPGA\n\n");
   setupRun(program, context, q, in1, out1);
 
