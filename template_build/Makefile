@@ -24,9 +24,6 @@ HOST_SRC := ${WORK}/host.cpp
 host.exe: $(HOST_SRC)
 	g++ -g -std=c++17 -Wall -O0 $(HOST_SRC) -o ./host.exe -I${XILINX_XRT}/include/ -I${XILINX_VITIS}/../../Vitis_HLS/2023.1/include/ -L${XILINX_XRT}/lib ${LDFLAGS}
 	
-# NN_DIR := ${WORK}/hlsProject
-# NN_SRC := ${NN_DIR}/firmware/myproject.cpp
-# NN_INCLUDE := -I${NN_DIR} -I${NN_DIR}/firmware
 NN_DIR := ${WORK}/hlsProject
 NN_SRC := ${NN_DIR}/firmware/NNFakeOverlap.cpp
 NN_INCLUDE := -I${NN_DIR} -I${NN_DIR}/firmware
@@ -45,11 +42,6 @@ ${KERNEL_NAME}.xo: ${KERNEL_SRC} ${KERNEL_CFG}
 	cd ./kernels; \
 	v++ -c --mode hls --config ${KERNEL_CFG}; \
 	mv ./${KERNEL_NAME}/${KERNEL_NAME}.xo ..
-# broke summary reading when tried to move, just load
-# `vitis_analyzer kernels/${KERNEL_NAME}/${KENRLE_NAME}.hlscompile_summary` should have everything needed
-# TODO: could make auto generated script
-# mv ./kernels/${KERNEL_NAME}/${KERNEL_NAME}.hlscompile_summary ./_${KERNEL_NAME}.hlscompile_summary
-#	mv ./kernels/${KERNEL_NAME}/reports/hls_compile.rpt ./_${KERNEL_NAME}_design.rpt
 
 ${HLS_NAME}.xclbin: $(KERNEL_NAME).xo emconfig.json ${WORK}/runner/config.cfg
 	mkdir -p ./xclbin
@@ -64,15 +56,15 @@ export.sh: ${HLS_NAME}.xclbin
 emconfig.json:
 	emconfigutil --platform $(PART)
 
-host: host.exe
+host:
 	rm -f host.exe
 	${MAKE}
 
-link: ${HLS_NAME}.xclbin
+link:
 	rm -f ${HLS_NAME}.xclbin
 	${MAKE}
 
-compile: ${KERNEL_NAME}.xo
+compile:
 	rm -f ${KERNEL_NAME}.xo
 	${MAKE}
 

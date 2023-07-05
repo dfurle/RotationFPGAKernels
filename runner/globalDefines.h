@@ -14,9 +14,9 @@ typedef ap_fixed<16,6> layer1_t;
 typedef ap_fixed<16,6> result_t;
 
 // #define STREAM
-// #define VECTOR
+#define VECTOR
 // #define ARRAY
-#define MIDSTREAM
+// #define MIDSTREAM
 
 // #define REMOVE_ROTATION
 // #define REMOVE_NN

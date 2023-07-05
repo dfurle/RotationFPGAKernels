@@ -58,19 +58,27 @@ Thus the final setup is having two functions act as virtual kernels to the "top"
 
 ## Settings to change when adjusting
 
+- in `./runner/globalDefines.h` can edit various parameter modes (choose only 1)
+  - `#define STREAM` uses `hls::stream<hls::vector>` between every function call, and converts input array to vector
+  - `#define MID_STREAM` uses `hls::stream<hls::vector>` to stream from `rotationKernel` to `hlsProject`, and converts input array to vector
+  - `#define VECTOR` uses `hls::vector` between every function call, and converts input array to vector
+  - `#define ARRAY` uses simple fixed arrays, and loads input array into local array
+
 - in the Makefile you can edit various things to add/change
   - `HLS_NAME` changes name of kernel and output files
     - if changing, also have to change `config.cfg` file
   - `PART` should be set to the platform that you installed (from .deb/.rpm)
     - (currently only works for Data Center cards, not Embedded (requires --sysroot etc))
-  - most important `EMU_MODE` whenever you want to change emulation/hw mode change this between
+    - when changing also change `part` option in `./runner/hls_config.cfg`
+      - still don't know where to find `part=` id name, found current one through Vitis IDE GUI when compiling a project...
+  - `EMU_MODE` whenever you want to change emulation/hw mode change this between
     - `sw_emu`, `hw_emu`, and `hw`
   - .
   - `HOST_SRC` to add/remove source files for host (.cpp files)
   - `NN_SRC` to add/remove source files for NN kernel (.cpp files)
+    - also edit `./runner/hls_config.cfg`
   - `ROTATION_SRC` to add/remove source files for rotation kernel (.cpp files)
-- for compiling `.xo` files, edit `hls_config.cfg`
-  - still don't know where to find `part=` id name, found current one through Vitis IDE GUI when compiling a project...
+    - also edit `./runner/hls_config.cfg`
 - when editing one file, make sure the other has similar names
   - such that `hls_config.cfg`, `config.cfg`, and `Makefile` contain same names for arguments that are needed to be same, otherwise might fail to build!
 - ! ! ! Important, when running `sw_emu`:
