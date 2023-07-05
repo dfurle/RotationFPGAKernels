@@ -46,21 +46,26 @@ int setupDevice(std::vector<cl::Device>& devices, cl::Device& device){
   devices.resize(1);
 }
 
+
+#define NUM_TRACKS 10
+
+
+
 void setupRun(cl::Program& program, cl::Context& context, cl::CommandQueue& q, float *in1, float *out1){
 
   // this could be abstractified in some function/class probably
-  size_t in_size = sizeof(ap_fixed<16,11>) * N_INPUT_1_1;
+  size_t in_size = sizeof(ap_fixed<16,11>) * N_INPUT_1_1 * NUM_TRACKS;
   cl::Buffer buffer_a(context, CL_MEM_READ_ONLY, in_size);
   ap_fixed<16,11> *ptr_a = (ap_fixed<16,11> *)q.enqueueMapBuffer(buffer_a, CL_TRUE, CL_MAP_WRITE, 0, in_size);
 
 
-  size_t out_nn_size = sizeof(ap_fixed<16,6>) * N_LAYER_8;
+  size_t out_nn_size = sizeof(ap_fixed<16,6>) * N_LAYER_8 * NUM_TRACKS;
   cl::Buffer buffer_result(context, CL_MEM_WRITE_ONLY, out_nn_size);
   ap_fixed<16,6> *ptr_result = (ap_fixed<16,6> *)q.enqueueMapBuffer(buffer_result, CL_TRUE, CL_MAP_READ, 0, out_nn_size);
 
 
 
-  cl::Kernel rkernel(program, "full_network");
+  cl::Kernel rkernel(program, "runner");
   
   // set the kernel Arguments
   int narg = 0;
@@ -71,10 +76,19 @@ void setupRun(cl::Program& program, cl::Context& context, cl::CommandQueue& q, f
   std::cout << "setting input data" << std::endl;
 
   // setting input data
-  for (int i = 0; i < N_INPUT_1_1; i++) {
-    ptr_a[i] = in1[i];
-    std::cout << ptr_a[i] << " ";
-  }
+  // for (int i = 0; i < N_INPUT_1_1 * NUM_TRACKS; i++) {
+  //   ptr_a[i] = in1[i];
+  //   std::cout << ptr_a[i] << " ";
+  // }
+  // for(int j = 0; j < NUM_TRACKS; j++){
+    for(int i = 0; i < N_INPUT_1_1; i++){
+      ptr_a[i] = in1[i];
+      // ptr_a[i + N_INPUT_1_1 * j] = in1[i + N_INPUT_1_1 * j];
+      std::cout << ptr_a[i] << " ";
+      // std::cout << ptr_a[i + N_INPUT_1_1 * j] << " ";
+    }
+    std::cout << std::endl;
+  // }
   std::cout << "\n\n" << std::endl;
 
   std::cout << "running fpga" << std::endl;
@@ -101,7 +115,16 @@ void setupRun(cl::Program& program, cl::Context& context, cl::CommandQueue& q, f
   // }
   // std::cout << "\n\n\n" << std::endl;
 
-  std::cout << "Result: " << ptr_result[0] << std::endl;
+  std::cout << "Result: \n" << std::endl;
+  // for(int j = 0; j < NUM_TRACKS; j++){
+    for(int i = 0; i < N_LAYER_8; i++){
+      std::cout << ptr_result[i] << " ";
+      // std::cout << ptr_result[i + N_LAYER_8 * j] << " ";
+    }
+    std::cout << std::endl;
+  // }
+  std::cout << "\n\n\n" << std::endl;
+
 
   q.enqueueUnmapMemObject(buffer_a, ptr_a);
   q.enqueueUnmapMemObject(buffer_result, ptr_result);
@@ -158,6 +181,7 @@ int main(int argc, char *argv[]) {
   std::ifstream file("inputs.dat");
   std::string sa;
   float* in1 = new float[N_INPUT_1_1];
+  // float* in1 = new float[N_INPUT_1_1 * NUM_TRACKS];
 
   int dataset = 1; // which dataset to read from file, terribly efficiency wise; there are 3 (1,2,3)
 
@@ -168,6 +192,15 @@ int main(int argc, char *argv[]) {
 
   std::cout << "dataset: #" << dataset << std::endl;
 
+  // for(int d = 0; d < dataset; d++){
+  //   for(int j = 0; j < NUM_TRACKS; j++){
+  //     for(int i = 0; i < N_INPUT_1_1; i++){
+  //       getline(file, sa);
+  //       in1[i + N_INPUT_1_1 * j] = std::stof(sa);
+  //     }
+  //   }
+  // }
+
   for(int d = 0; d < dataset; d++){
     for(int i = 0; i < N_INPUT_1_1; i++){
       getline(file, sa);
@@ -177,6 +210,7 @@ int main(int argc, char *argv[]) {
   }
 
   float* out1 = new float[N_LAYER_8];
+  // float* out1 = new float[N_LAYER_8 * NUM_TRACKS];
   printf("\nRUNNING FPGA\n\n");
   setupRun(program, context, q, in1, out1);
 
