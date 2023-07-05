@@ -27,7 +27,7 @@ host.exe: $(HOST_SRC)
 # NN_DIR := ${WORK}/hlsProject
 # NN_SRC := ${NN_DIR}/firmware/myproject.cpp
 # NN_INCLUDE := -I${NN_DIR} -I${NN_DIR}/firmware
-NN_DIR := ${WORK}/new_hlsProject
+NN_DIR := ${WORK}/hlsProject
 NN_SRC := ${NN_DIR}/firmware/NNFakeOverlap.cpp
 NN_INCLUDE := -I${NN_DIR} -I${NN_DIR}/firmware
 	

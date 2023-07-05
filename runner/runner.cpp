@@ -6,9 +6,17 @@
 
 void runner(input_raw_t in1[N_INPUT_1_1], result_t out1[N_LAYER_8]){
 // void runner(input_raw_t in1[N_INPUT_1_1 * NUM_TRACKS], result_t out1[N_LAYER_8 * NUM_TRACKS]){
+
   #pragma HLS ARRAY_RESHAPE variable=in1 complete dim = 0
   #pragma HLS ARRAY_RESHAPE variable=out1 complete dim = 0
   // #pragma HLS PIPELINE
+
+  #ifdef ARRAY
+  input_raw_t in1_loc[N_INPUT_1_1];
+  result_t out1_loc[N_LAYER_8];
+  #pragma HLS ARRAY_RESHAPE variable=in1_loc complete dim = 0
+  #pragma HLS ARRAY_RESHAPE variable=out1_loc complete dim = 0
+  #endif
 
   #ifdef STREAM
   hls::stream<hls::vector<input_raw_t,N_INPUT_1_1>> in1_stream;
@@ -35,6 +43,14 @@ void runner(input_raw_t in1[N_INPUT_1_1], result_t out1[N_LAYER_8]){
       #pragma HLS unroll 
       // in1_vec[i] = in1[i + (N_INPUT_1_1 * trkNum)];
       in1_vec[i] = in1[i];
+    }
+    #endif
+
+    #ifdef ARRAY
+    for(int i = 0; i < N_INPUT_1_1; i++){
+      #pragma HLS unroll 
+      // in1_vec[i] = in1[i + (N_INPUT_1_1 * trkNum)];
+      in1_loc[i] = in1[i];
     }
     #endif
 
@@ -66,8 +82,8 @@ void runner(input_raw_t in1[N_INPUT_1_1], result_t out1[N_LAYER_8]){
     // myproject(rot_vec, out1_vec);
     #endif
     #ifdef ARRAY
-    rotationKernel(in1, rot);
-    NN::NNFakeOverlap(rot, out1);
+    rotationKernel(in1_loc, rot);
+    NN::NNFakeOverlap(rot, out1_loc);
     // myproject(rot, out1);
     #endif
 
@@ -84,6 +100,13 @@ void runner(input_raw_t in1[N_INPUT_1_1], result_t out1[N_LAYER_8]){
     //   #pragma HLS unroll
     //   out1[i + (trkNum)] = out1_vec[i];
     // }
+    #endif
+
+    #ifdef ARRAY
+    for(int i = 0; i < N_INPUT_1_1; i++){
+      #pragma HLS unroll 
+      out1[i] = out1_loc[i];
+    }
     #endif
 
   // }
