@@ -4,44 +4,13 @@
 typedef ap_fixed<32,10> internalType;
 
 
-#ifdef STREAM
-void rotationKernel(hls::stream<hls::vector<input_raw_t,N_INPUT_1_1>>& in1_stream, hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& out1_stream){
-#endif
-#ifdef VECTOR
 void rotationKernel(hls::vector<input_raw_t,N_INPUT_1_1>& in1, hls::vector<layer1_t,N_INPUT_1_1>& out1){
-#endif
-#ifdef ARRAY
-void rotationKernel(input_raw_t in1[N_INPUT_1_1], layer1_t out1[N_INPUT_1_1]){
-#endif
-#ifdef MIDSTREAM
-void rotationKernel(input_raw_t in1[N_INPUT_1_1], hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& out1_stream){
-#endif
   // #pragma HLS INLINE
   #pragma HLS PIPELINE
   // #pragma HLS DATAFLOW
 
-  #ifdef REMOVE_ROTATION
-  for(int i = 0; i < N_INPUT_1_1; i++){
-    #pragma HLS UNROLL
-    out1[i] = in1[i];
-  }
-  #else
-
-  #ifdef STREAM
-  hls::vector<input_raw_t,N_INPUT_1_1> in1;
-  hls::vector<layer1_t,N_INPUT_1_1> out1;
-  #endif
-
-  #ifdef MIDSTREAM
-  hls::vector<layer1_t,N_INPUT_1_1> out1;
-  #endif
-
   #pragma HLS ARRAY_RESHAPE variable = in1 complete dim = 0
-  #pragma HLS ARRAY_PARTITION variable = out1 complete dim = 0
-
-  #ifdef STREAM
-  in1_stream >> in1;
-  #endif
+  #pragma HLS ARRAY_RESHAPE variable = out1 complete dim = 0
 
   const internalType pi = 3.14;
   const internalType _XScale = 0.000936329588;
@@ -87,10 +56,4 @@ ZFlipScale:
       out1[index] = in1[index] * _ZScale;
     }
   }
-
-  #if defined(STREAM) || defined(MIDSTREAM)
-  out1_stream << out1;
-  #endif
-
-  #endif
 }

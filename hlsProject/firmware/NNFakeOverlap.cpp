@@ -5,57 +5,17 @@
 
 namespace NN{
 
-#ifdef STREAM
-void NNFakeOverlap(hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& in1_stream, hls::stream<hls::vector<result_t,N_LAYER_8>>& out1_stream){
-#endif
-#ifdef VECTOR
 void NNFakeOverlap(hls::vector<layer1_t,N_INPUT_1_1>& in1, hls::vector<result_t,N_LAYER_8>& out1){
-#endif
-#ifdef ARRAY
-void NNFakeOverlap(layer1_t in1[N_INPUT_1_1], result_t out1[N_LAYER_8]){
-#endif
-#ifdef MIDSTREAM
-void NNFakeOverlap(hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& in1_stream, result_t out1[N_LAYER_8]){
-#endif
   // #pragma HLS INLINE
   #pragma HLS PIPELINE
 
-  #ifdef REMOVE_NN
-  for(int i = 0; i < N_LAYER_8; i++){
-    #pragma HLS UNROLL
-    out1[i] = in1[i];
-  }
-  return;
-  #else
-  
-
-  #ifdef STREAM
-  hls::vector<layer1_t,N_INPUT_1_1> in1;
-  hls::vector<result_t,N_LAYER_8> out1;
-  #endif
-
-  #ifdef MIDSTREAM
-  hls::vector<layer1_t,N_INPUT_1_1> in1;
-  #endif
-
   #pragma HLS ARRAY_RESHAPE variable = in1 complete dim = 0
-  #pragma HLS ARRAY_PARTITION variable = out1 complete dim = 0
-
-  #if defined(STREAM) || defined(MIDSTREAM)
-  in1_stream >> in1;
-  #endif
+  #pragma HLS ARRAY_RESHAPE variable = out1 complete dim = 0
 
   // hls-fpga-machine-learning insert layers
   layer2_t layer2_out[N_LAYER_2];
   #pragma HLS ARRAY_PARTITION variable = layer2_out complete dim = 0
-
-  #if defined(STREAM) || defined(MIDSTREAM) || defined(VECTOR)
-  // this seems to work, gives pointer to the data,
-  //  atleast it outputs a value of 0.999 for the output...
   nnet::dense<layer1_t, layer2_t, config2>(in1.begin(), layer2_out, w2, b2); // dense
-  #else
-  nnet::dense<layer1_t, layer2_t, config2>(in1, layer2_out, w2, b2); // dense
-  #endif
 
   layer3_t layer3_out[N_LAYER_2];
   #pragma HLS ARRAY_PARTITION variable=layer3_out complete dim=0
@@ -89,12 +49,6 @@ void NNFakeOverlap(hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& in1_stream, r
   // probably best to just loop/unroll? but im not sure
   // out1.data = layer9_out;
   out1[0] = layer9_out[0];
-
-  #ifdef STREAM
-  out1_stream << out1;
-  #endif
-
-  #endif
 }
 
 }
