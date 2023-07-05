@@ -2,13 +2,15 @@
 
 ## What this does
 
-Project contains a neural network compiled by `hls4ml` from keras python (`./hlsProject/`). Initially that project would contain just the NN implementation with fixed size array arguments. Further argument types were added and a "runner" function was added. These could be pulled out as a seperate file in the future to make this more modular.
+Project contains a neural network compiled by `hls4ml` from keras python (`./hlsProject/`). Initially that project would contain just the NN implementation with fixed size array arguments, but was further edited to allow different parameters for testing.
 
 Project also contains the `./rotationKernel/` which does some preprocessing on the data to be passed into the NN.
 
+Further, project contains a "runner" function (`./runner/runner.cpp`). Which calls on the `rotationKernel` and `hlsProject` in sequence.
+
 Initial idea was to seperate everything into their own "kernels" such that each is generated as a `.xo` (xilinx's object format) which then could be linked together into the `.xclbin` to be uploaded to FPGAs. This `.xclbin` will be uploaded by the CPU (using OpenCL library) to a PCIe connected FPGA card (Data Center Cards, ex: u200) and data will be sent by CPU through PCIe to FPGA to execute.
 
-We have not found much information on how to properly link together the kernels to execute sequentially. The closest we got was enqueueing multiple kernels after each other which we don't know the performance of compared to compiling a single kernel.
+We have not found much information on how to properly link together the kernels to execute sequentially. The closest we got was enqueueing multiple kernels after each other which we don't know the performance of compared to compiling a single kernel yet.
 
 Thus the final setup is having two functions act as virtual kernels to the "top" function which will be called by the Host, which then calls the virtual kernels sequentially, and thus the data passing is definitely optimized for FPGA. Furthermore it is easier to see the total time of execution this way.
 
@@ -26,10 +28,9 @@ Thus the final setup is having two functions act as virtual kernels to the "top"
 
 ### First time setup
 
-- `mkdir build`
-- `cp Makefile build/`
-- `cp xrt.ini build/`
-- `cp hlsProject/tb_data/tb_input_features_raw.dat build/inputs.dat`
+- copy the template build directory to start building
+- `cp -r template_build build`
+- `cd build`
 
 ### On every terminal
 
@@ -52,7 +53,7 @@ Thus the final setup is having two functions act as virtual kernels to the "top"
 
 - you can switch the `debug_mode` from `off` to `gui` in `xrt.ini` to show some extra run information
 - otherwise, you can run `vitis_analyzer` and open the main compilation and profiling file
-  - `./{build}/kernels/full_network/full_network.hlscompile_summary`
+  - `./{build}/kernels/runner/runner.hlscompile_summary`
   - the `Schedule Viewer` seem to be a fairly important tab to see how the virtual kernels operate
 
 ## Settings to change when adjusting
