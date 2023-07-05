@@ -4,7 +4,9 @@
     "${XILINX_HLS}/include/",
     "${XILINX_HLS}/include/etc/",
     "${workspaceFolder}/hlsProject/firmware",
+    // "${workspaceFolder}/hlsProject/firmware",
     "${workspaceFolder}/rotationKernel",
+    "${workspaceFolder}/runner",
     "${workspaceFolder}",
   ]
 }

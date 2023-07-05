@@ -1,7 +1,6 @@
 #include "rotationKernel.h"
 #include <hls_math.h>
 
-
 typedef ap_fixed<32,10> internalType;
 
 

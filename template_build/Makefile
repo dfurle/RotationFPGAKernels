@@ -24,22 +24,21 @@ HOST_SRC := ${WORK}/host.cpp
 host.exe: $(HOST_SRC)
 	g++ -g -std=c++17 -Wall -O0 $(HOST_SRC) -o ./host.exe -I${XILINX_XRT}/include/ -I${XILINX_VITIS}/../../Vitis_HLS/2023.1/include/ -L${XILINX_XRT}/lib ${LDFLAGS}
 	
+# NN_DIR := ${WORK}/hlsProject
+# NN_SRC := ${NN_DIR}/firmware/myproject.cpp
+# NN_INCLUDE := -I${NN_DIR} -I${NN_DIR}/firmware
 NN_DIR := ${WORK}/hlsProject
-NN_SRC := ${NN_DIR}/firmware/myproject.cpp
+NN_SRC := ${NN_DIR}/firmware/NNFakeOverlap.cpp
 NN_INCLUDE := -I${NN_DIR} -I${NN_DIR}/firmware
 	
 ROTATION_DIR := ${WORK}/rotationKernel
 ROTATION_SRC := ${ROTATION_DIR}/rotationKernel.cpp
 ROTATION_INCLUDE := -I${ROTATION_DIR}
 
-# KERNEL_SRC := ${NN_SRC}
-# KERNEL_INCLUDE := ${NN_INCLUDE}
-# KERNEL_SRC := ${NN_SRC}
-# KERNEL_INCLUDE := ${NN_INCLUDE}
-KERNEL_SRC := ${NN_SRC} ${ROTATION_SRC}
-KERNEL_INCLUDE := ${NN_INCLUDE} ${ROTATION_INCLUDE}
-KERNEL_CFG := ${WORK}/hls_config.cfg
-KERNEL_NAME := full_network
+KERNEL_SRC := ${WORK}/runner/runner.cpp ${NN_SRC} ${ROTATION_SRC}
+KERNEL_INCLUDE := ${WORK}/runner ${NN_INCLUDE} ${ROTATION_INCLUDE}
+KERNEL_CFG := ${WORK}/runner/hls_config.cfg
+KERNEL_NAME := runner
 
 ${KERNEL_NAME}.xo: ${KERNEL_SRC} ${KERNEL_CFG}
 	mkdir -p ./kernels
@@ -52,10 +51,10 @@ ${KERNEL_NAME}.xo: ${KERNEL_SRC} ${KERNEL_CFG}
 # mv ./kernels/${KERNEL_NAME}/${KERNEL_NAME}.hlscompile_summary ./_${KERNEL_NAME}.hlscompile_summary
 #	mv ./kernels/${KERNEL_NAME}/reports/hls_compile.rpt ./_${KERNEL_NAME}_design.rpt
 
-${HLS_NAME}.xclbin: $(KERNEL_NAME).xo emconfig.json ${WORK}/config.cfg
+${HLS_NAME}.xclbin: $(KERNEL_NAME).xo emconfig.json ${WORK}/runner/config.cfg
 	mkdir -p ./xclbin
 	cd ./xclbin; \
-	v++ -l -t $(EMU_MODE) --platform $(PART) --config ${WORK}/config.cfg ../$(KERNEL_NAME).xo -o $(HLS_NAME).xclbin; \
+	v++ -l -t $(EMU_MODE) --platform $(PART) --config ${WORK}/runner/config.cfg ../$(KERNEL_NAME).xo -o $(HLS_NAME).xclbin; \
 	mv ${HLS_NAME}.xclbin ..
 
 export.sh: ${HLS_NAME}.xclbin

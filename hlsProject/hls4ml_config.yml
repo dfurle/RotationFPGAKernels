@@ -1,0 +1,63 @@
+Backend: Vitis
+ClockPeriod: 5
+HLSConfig:
+  LayerName:
+    batch_normalization:
+      Precision:
+        bias: ap_fixed<16,6>
+        result: ap_fixed<16,6>
+        scale: ap_fixed<16,6>
+      Trace: true
+    batch_normalization_1:
+      Precision:
+        bias: ap_fixed<16,6>
+        result: ap_fixed<16,6>
+        scale: ap_fixed<16,6>
+      Trace: true
+    dense:
+      Precision:
+        bias: ap_fixed<16,6>
+        result: ap_fixed<16,6>
+        weight: ap_fixed<16,6>
+      Trace: true
+    dense_1:
+      Precision:
+        bias: ap_fixed<16,6>
+        result: ap_fixed<16,6>
+        weight: ap_fixed<16,6>
+      Trace: true
+    dense_1_relu:
+      Precision:
+        result: ap_fixed<16,6>
+      Trace: true
+    dense_2:
+      Precision:
+        bias: ap_fixed<16,6>
+        result: ap_fixed<16,6>
+        weight: ap_fixed<16,6>
+      Trace: true
+    dense_2_sigmoid:
+      Precision:
+        result: ap_fixed<16,6>
+      Trace: true
+    dense_relu:
+      Precision:
+        result: ap_fixed<16,6>
+      Trace: true
+    input_1:
+      Precision: ap_fixed<16,6>
+      Trace: true
+  Model:
+    BramFactor: 1000000000
+    Precision: ap_fixed<16,6>
+    ReuseFactor: 1
+    Strategy: Latency
+    TraceOutput: false
+IOType: io_parallel
+InputData: null
+KerasModel: !keras_model 'HLSModelTesting/OverlapNN_Vitis2022_main/keras_model.h5'
+OutputDir: HLSModelTesting/OverlapNN_Vitis2022_main
+OutputPredictions: null
+Part: xcu250-figd2104-2L-e
+ProjectName: NNFakeOverlap
+Stamp: 17dA875D

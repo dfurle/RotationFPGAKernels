@@ -8,18 +8,7 @@
 
 #include "defines.h"
 
-#define N_INPUT_1_1 24
-typedef ap_fixed<16,11> input_raw_t;
-typedef ap_fixed<16,6> layer1_t;
-
-#define STREAM
-// #define VECTOR
-// #define ARRAY
-// #define MIDSTREAM
-
-// #define REMOVE_ROTATION
-// #define REMOVE_NN
-// #define REMOVE_FULL
+#include "globalDefines.h"
 
 extern "C"{
 
