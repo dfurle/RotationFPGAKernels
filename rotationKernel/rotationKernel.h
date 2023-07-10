@@ -13,18 +13,7 @@
 extern "C"{
 
 // Prototype of top level function for C-synthesis
-#ifdef STREAM
-void rotationKernel(hls::stream<hls::vector<input_raw_t,N_INPUT_1_1>>& in1_stream, hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& out1_stream);
-#endif
-#ifdef VECTOR
 void rotationKernel(hls::vector<input_raw_t,N_INPUT_1_1>& in1, hls::vector<layer1_t,N_INPUT_1_1>& out1);
-#endif
-#ifdef ARRAY
-void rotationKernel(input_raw_t* in1, layer1_t* out1);
-#endif
-#ifdef MIDSTREAM
-void rotationKernel(input_raw_t* in1, hls::stream<hls::vector<layer1_t,N_INPUT_1_1>>& out1_stream);
-#endif
 }
 
 #endif

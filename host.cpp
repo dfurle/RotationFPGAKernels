@@ -47,7 +47,8 @@ int setupDevice(std::vector<cl::Device>& devices, cl::Device& device){
 }
 
 
-#define NUM_TRACKS 10
+#define NUM_TRACKS 1
+// #define NUM_TRACKS 10
 
 
 
@@ -75,20 +76,15 @@ void setupRun(cl::Program& program, cl::Context& context, cl::CommandQueue& q, f
 
   std::cout << "setting input data" << std::endl;
 
-  // setting input data
-  // for (int i = 0; i < N_INPUT_1_1 * NUM_TRACKS; i++) {
-  //   ptr_a[i] = in1[i];
-  //   std::cout << ptr_a[i] << " ";
-  // }
-  // for(int j = 0; j < NUM_TRACKS; j++){
+  for(int j = 0; j < NUM_TRACKS; j++){
     for(int i = 0; i < N_INPUT_1_1; i++){
-      ptr_a[i] = in1[i];
-      // ptr_a[i + N_INPUT_1_1 * j] = in1[i + N_INPUT_1_1 * j];
-      std::cout << ptr_a[i] << " ";
-      // std::cout << ptr_a[i + N_INPUT_1_1 * j] << " ";
+      ptr_a[i + N_INPUT_1_1 * j] = in1[i + N_INPUT_1_1 * j];
+      std::cout << ptr_a[i + N_INPUT_1_1 * j] << " ";
     }
     std::cout << std::endl;
-  // }
+  }
+
+
   std::cout << "\n\n" << std::endl;
 
   std::cout << "running fpga" << std::endl;
@@ -116,15 +112,14 @@ void setupRun(cl::Program& program, cl::Context& context, cl::CommandQueue& q, f
   // std::cout << "\n\n\n" << std::endl;
 
   std::cout << "Result: \n" << std::endl;
-  // for(int j = 0; j < NUM_TRACKS; j++){
+  for(int j = 0; j < NUM_TRACKS; j++){
     for(int i = 0; i < N_LAYER_8; i++){
-      std::cout << ptr_result[i] << " ";
-      // std::cout << ptr_result[i + N_LAYER_8 * j] << " ";
+      std::cout << ptr_result[i + N_LAYER_8 * j] << " ";
     }
     std::cout << std::endl;
-  // }
-  std::cout << "\n\n\n" << std::endl;
+  }
 
+  std::cout << std::endl;
 
   q.enqueueUnmapMemObject(buffer_a, ptr_a);
   q.enqueueUnmapMemObject(buffer_result, ptr_result);
@@ -180,8 +175,7 @@ int main(int argc, char *argv[]) {
   
   std::ifstream file("inputs.dat");
   std::string sa;
-  float* in1 = new float[N_INPUT_1_1];
-  // float* in1 = new float[N_INPUT_1_1 * NUM_TRACKS];
+  float* in1 = new float[N_INPUT_1_1 * NUM_TRACKS];
 
   int dataset = 1; // which dataset to read from file, terribly efficiency wise; there are 3 (1,2,3)
 
@@ -192,25 +186,16 @@ int main(int argc, char *argv[]) {
 
   std::cout << "dataset: #" << dataset << std::endl;
 
-  // for(int d = 0; d < dataset; d++){
-  //   for(int j = 0; j < NUM_TRACKS; j++){
-  //     for(int i = 0; i < N_INPUT_1_1; i++){
-  //       getline(file, sa);
-  //       in1[i + N_INPUT_1_1 * j] = std::stof(sa);
-  //     }
-  //   }
-  // }
-
   for(int d = 0; d < dataset; d++){
-    for(int i = 0; i < N_INPUT_1_1; i++){
-      getline(file, sa);
-      in1[i] = std::stof(sa);
-      // in1[i] = i * 2.346547; // some random decimal to produce some decimal results
+    for(int j = 0; j < NUM_TRACKS; j++){
+      for(int i = 0; i < N_INPUT_1_1; i++){
+        getline(file, sa);
+        in1[i + N_INPUT_1_1 * j] = std::stof(sa);
+      }
     }
   }
 
-  float* out1 = new float[N_LAYER_8];
-  // float* out1 = new float[N_LAYER_8 * NUM_TRACKS];
+  float* out1 = new float[N_LAYER_8 * NUM_TRACKS];
   printf("\nRUNNING FPGA\n\n");
   setupRun(program, context, q, in1, out1);
 
