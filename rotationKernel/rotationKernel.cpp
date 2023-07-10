@@ -17,14 +17,12 @@ void rotationKernel(hls::vector<input_raw_t,N_INPUT_1_1>& in1, hls::vector<layer
   const internalType _YScale = 0.000936329588;
   const internalType _ZScale = 0.0003305238804;
 
-  bool flipZ = (in1[0] > 0);
-  internalType div = in1[0] / in1[8];
-  internalType rotateAngle = hls::atan(div);
-  if (in1[7] < 0)
-    rotateAngle = rotateAngle + pi;
+  const internalType overD = 0.002;
 
-  internalType cos_angle = hls::cos(rotateAngle);
-  internalType sin_angle = hls::sin(rotateAngle);
+  bool flipZ = (in1[0] > 0);
+
+  internalType cos_angle = in1[8]*overD;
+  internalType sin_angle = in1[0]*overD;
 
 XYRotation:
   for (int i = 0; i < 8; i++){

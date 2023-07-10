@@ -7,6 +7,8 @@
 
 #define N_INPUT_1_1 24
 #define N_LAYER_8 1
+
+#define NUM_TRACKS 1
 // #define NUM_TRACKS 10
 
 typedef ap_fixed<16,11> input_raw_t;
