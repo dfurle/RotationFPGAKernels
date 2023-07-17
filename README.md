@@ -58,12 +58,6 @@ Thus the final setup is having two functions act as virtual kernels to the "top"
 
 ## Settings to change when adjusting
 
-- in `./runner/globalDefines.h` can edit various parameter modes (choose only 1)
-  - `#define STREAM` uses `hls::stream<hls::vector>` between every function call, and converts input array to vector
-  - `#define MID_STREAM` uses `hls::stream<hls::vector>` to stream from `rotationKernel` to `hlsProject`, and converts input array to vector
-  - `#define VECTOR` uses `hls::vector` between every function call, and converts input array to vector
-  - `#define ARRAY` uses simple fixed arrays, and loads input array into local array
-
 - in the Makefile you can edit various things to add/change
   - `HLS_NAME` changes name of kernel and output files
     - if changing, also have to change `config.cfg` file
@@ -74,16 +68,25 @@ Thus the final setup is having two functions act as virtual kernels to the "top"
   - `EMU_MODE` whenever you want to change emulation/hw mode change this between
     - `sw_emu`, `hw_emu`, and `hw`
   - .
-  - `HOST_SRC` to add/remove source files for host (.cpp files)
-  - `NN_SRC` to add/remove source files for NN kernel (.cpp files)
-    - also edit `./runner/hls_config.cfg`
-  - `ROTATION_SRC` to add/remove source files for rotation kernel (.cpp files)
-    - also edit `./runner/hls_config.cfg`
+  - Depending what compilation line you use, (comment out/in in Makefile)
+    - using option without `--mode hls`:
+      - `HOST_SRC` to add/remove source files for host (.cpp files)
+      - `NN_SRC` to add/remove source files for NN kernel (.cpp files)
+        - also edit `./runner/hls_config.cfg`
+      - `ROTATION_SRC` to add/remove source files for rotation kernel (.cpp files)
+        - also edit `./runner/hls_config.cfg`
+    - using option with `--mode hls`:
+      - edit `./runner/hls_config.cfg` to proper flags and files
 - when editing one file, make sure the other has similar names
   - such that `hls_config.cfg`, `config.cfg`, and `Makefile` contain same names for arguments that are needed to be same, otherwise might fail to build!
+
+## Issues
+
 - ! ! ! Important, when running `sw_emu`:
   - inside `hlsProject/firmware/parameters.h`
   - uncomment the `#define __SYNTHESIS__` and `#undef __SYNTHESIS__` around the weight includes
   - reason: during `sw_emu` it doesn't set the `__SYNTHESIS__` define, thus the weights are never initialized and will be `0`. There used to be code to read from text files, but it is simpler to just leave it as is without the extra text files.
   - reason #2: I decided I would rather add the #defines around the includes than go into each weight.h file manually to remove the #ifdefs, since this project could be made to regenerate later on
-  - if this is tedious, just go into each weight.h file under `hlsProject/firmware/weights/*.h` and remove the #ifdefs and the weight declaration, and just leave the one with definition initialization,
+  - if this is tedious, just go into each weight.h file under `hlsProject/firmware/weights/*.h` and remove the #ifdefs and the weight declaration, and just leave the one with definition initialization
+- `./runner/config.cfg` contains some commented out lines about clocks, having anything somehow freezes hw_emu...
+- running with `--mode hls` shows no timing violations in `*.hlscompile_summary` but shows timing violation in `reports/hls_compile.rpt`...

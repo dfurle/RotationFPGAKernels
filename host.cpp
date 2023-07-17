@@ -3,13 +3,15 @@
 #include <iostream>
 #include <stdlib.h>
 
-#include "ap_fixed.h"
+#include "globalDefines.h"
+
+// #include "ap_fixed.h"
 
 
-static const int DATA_SIZE = 1024; // 4096;
+// static const int DATA_SIZE = 1024; // 4096;
 
-#define N_INPUT_1_1 24
-#define N_LAYER_8 1
+// #define N_INPUT_1_1 24
+// #define N_LAYER_8 1
 
 
 static const std::string error_message =
@@ -47,22 +49,22 @@ int setupDevice(std::vector<cl::Device>& devices, cl::Device& device){
 }
 
 
-#define NUM_TRACKS 1
-// #define NUM_TRACKS 10
+// #define NUM_TRACKS 1
+// #define NUM_TRACKS 100
 
 
 
 void setupRun(cl::Program& program, cl::Context& context, cl::CommandQueue& q, float *in1, float *out1){
 
   // this could be abstractified in some function/class probably
-  size_t in_size = sizeof(ap_fixed<16,11>) * N_INPUT_1_1 * NUM_TRACKS;
+  size_t in_size = sizeof(input_raw_t) * N_INPUT_1_1 * NUM_TRACKS;
   cl::Buffer buffer_a(context, CL_MEM_READ_ONLY, in_size);
-  ap_fixed<16,11> *ptr_a = (ap_fixed<16,11> *)q.enqueueMapBuffer(buffer_a, CL_TRUE, CL_MAP_WRITE, 0, in_size);
+  input_raw_t *ptr_a = (input_raw_t *)q.enqueueMapBuffer(buffer_a, CL_TRUE, CL_MAP_WRITE, 0, in_size);
 
 
-  size_t out_nn_size = sizeof(ap_fixed<16,6>) * N_LAYER_8 * NUM_TRACKS;
+  size_t out_nn_size = sizeof(result_t) * N_LAYER_8 * NUM_TRACKS;
   cl::Buffer buffer_result(context, CL_MEM_WRITE_ONLY, out_nn_size);
-  ap_fixed<16,6> *ptr_result = (ap_fixed<16,6> *)q.enqueueMapBuffer(buffer_result, CL_TRUE, CL_MAP_READ, 0, out_nn_size);
+  result_t *ptr_result = (result_t *)q.enqueueMapBuffer(buffer_result, CL_TRUE, CL_MAP_READ, 0, out_nn_size);
 
 
 
@@ -177,21 +179,37 @@ int main(int argc, char *argv[]) {
   std::string sa;
   float* in1 = new float[N_INPUT_1_1 * NUM_TRACKS];
 
-  int dataset = 1; // which dataset to read from file, terribly efficiency wise; there are 3 (1,2,3)
+  int skip_first = 0; // skip first few tracks
 
   if(argc > 2){
-    dataset = std::stod(argv[2]);
+    skip_first = std::stod(argv[2]);
     std::cout << "read argv" << std::endl;
   }
 
-  std::cout << "dataset: #" << dataset << std::endl;
+  std::cout << "skip first: #" << skip_first << std::endl;
+  for(int d = 0; d < skip_first; d++){
+    for(int i = 0; i < N_INPUT_1_1; i++){
+      getline(file, sa);
+    }
+  }
 
-  for(int d = 0; d < dataset; d++){
-    for(int j = 0; j < NUM_TRACKS; j++){
-      for(int i = 0; i < N_INPUT_1_1; i++){
-        getline(file, sa);
-        in1[i + N_INPUT_1_1 * j] = std::stof(sa);
-      }
+  int skip_n = 5; // number of tracks to skip in between reads so not the "same" track appears in same batch
+  int number_lines_in_file = 9288;
+  int maxNum = (number_lines_in_file / N_INPUT_1_1) - skip_first - (NUM_TRACKS * skip_n);
+
+  if(maxNum < 0){
+    printf("data will run out, try smaller skip_n or skip_first: %d\n", maxNum);
+    throw -1;
+  }
+
+
+  for(int j = 0; j < NUM_TRACKS; j++){
+    for(int i = 0; i < N_INPUT_1_1; i++){
+      getline(file, sa);
+      in1[i + N_INPUT_1_1 * j] = std::stof(sa);
+    }
+    for(int i = 0; i < N_INPUT_1_1 * skip_n; i++){
+      getline(file, sa);
     }
   }
 

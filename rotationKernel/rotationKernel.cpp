@@ -5,12 +5,12 @@ typedef ap_fixed<32,10> internalType;
 
 
 void rotationKernel(hls::vector<input_raw_t,N_INPUT_1_1>& in1, hls::vector<layer1_t,N_INPUT_1_1>& out1){
-  // #pragma HLS INLINE
+  #pragma HLS INLINE off
   #pragma HLS PIPELINE
   // #pragma HLS DATAFLOW
 
-  #pragma HLS ARRAY_RESHAPE variable = in1 complete dim = 0
-  #pragma HLS ARRAY_RESHAPE variable = out1 complete dim = 0
+  // #pragma HLS ARRAY_RESHAPE variable = in1 complete dim = 0
+  // #pragma HLS ARRAY_RESHAPE variable = out1 complete dim = 0
 
   const internalType pi = 3.14;
   const internalType _XScale = 0.000936329588;

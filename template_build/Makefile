@@ -4,7 +4,7 @@ HLS_NAME := TrackClassification
 # xilinx part to be used
 PART := xilinx_u200_gen3x16_xdma_2_202110_1
 # emulation mode (sw_emu, hw_emu, hw)
-EMU_MODE := sw_emu
+EMU_MODE := hw_emu
 
 ########
 
@@ -23,7 +23,7 @@ all: host compile link
 
 HOST_SRC := ${WORK}/host.cpp
 host.exe: $(HOST_SRC)
-	g++ -g -std=c++17 -Wall -O0 $(HOST_SRC) -o ./host.exe -I${XILINX_XRT}/include/ -I${XILINX_HLS}/include/ -L${XILINX_XRT}/lib ${LDFLAGS}
+	g++ -g -std=c++17 -Wall -O0 $(HOST_SRC) -o ./host.exe -I${WORK}/runner/ -I${XILINX_XRT}/include/ -I${XILINX_HLS}/include/ -L${XILINX_XRT}/lib ${LDFLAGS}
 	
 NN_DIR := ${WORK}/hlsProject
 NN_SRC := ${NN_DIR}/firmware/NNFakeOverlap.cpp
@@ -41,16 +41,14 @@ KERNEL_NAME := runner
 ${KERNEL_NAME}.xo: ${KERNEL_SRC} ${KERNEL_CFG}
 	mkdir -p ./kernels
 	cd ./kernels; \
-	pwd ;\
-	v++ -c --mode hls --config ${KERNEL_CFG}; \
-	pwd; 
+	v++ -c --mode hls --config ${KERNEL_CFG} && \
 	mv ${BUILDPATH}/kernels/${KERNEL_NAME}/${KERNEL_NAME}.xo ${BUILDPATH}/; \
 	cd ${BUILDPATH}
 
 ${HLS_NAME}.xclbin: $(KERNEL_NAME).xo emconfig.json ${WORK}/runner/config.cfg
 	mkdir -p ${BUILDPATH}/xclbin
 	cd ${BUILDPATH}/xclbin; \
-	v++ -l -t $(EMU_MODE) --platform $(PART) --config ${WORK}/runner/config.cfg ${BUILDPATH}/$(KERNEL_NAME).xo -o $(HLS_NAME).xclbin; \
+	v++ -l -t $(EMU_MODE) --platform $(PART) --config ${WORK}/runner/config.cfg ${BUILDPATH}/$(KERNEL_NAME).xo -o $(HLS_NAME).xclbin && \
 	mv ${BUILDPATH}/xclbin/${HLS_NAME}.xclbin ${BUILDPATH}/; \
 	cd ${BUILDPATH}
 
