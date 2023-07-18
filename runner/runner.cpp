@@ -3,8 +3,8 @@
 // #include "myproject.h"
 
 
-// #include "NNFakeOverlap.h"
-// #include "rotationKernel.h"
+#include "NNFakeOverlap.h"
+#include "rotationKernel.h"
 
 // #include <string.h>
 
