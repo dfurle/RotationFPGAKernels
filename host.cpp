@@ -2,16 +2,17 @@
 #include <fstream>
 #include <iostream>
 #include <stdlib.h>
+#define HOST
 
 #include "globalDefines.h"
 
 // #include "ap_fixed.h"
 
-
-// static const int DATA_SIZE = 1024; // 4096;
-
-// #define N_INPUT_1_1 24
-// #define N_LAYER_8 1
+const size_t test_nums = 7;
+int number_tracks[test_nums] = {1,10,100,1000,10000,50000, 100000};
+int track_timing_full[test_nums];
+int track_timing_single[test_nums];
+void printPythonList(int* arr, size_t size, std::string name);
 
 
 static const std::string error_message =
@@ -29,17 +30,28 @@ int setupDevice(std::vector<cl::Device>& devices, cl::Device& device){
   for (size_t i = 0; (i < platforms.size()) & (found_device == false); i++) {
     cl::Platform platform = platforms[i];
     std::string platformName = platform.getInfo<CL_PLATFORM_NAME>();
+    std::cout << "Found platform: " << std::endl;
     std::cout << platformName << std::endl;
     if (platformName == "Xilinx") {
       devices.clear();
       platform.getDevices(CL_DEVICE_TYPE_ACCELERATOR, &devices);
+      std::cout << "number Devices: " << devices.size() << std::endl;
       if (devices.size()) {
-        device = devices[0];
-        found_device = true;
-        break;
+        for(size_t d = 0; d < devices.size(); d++){
+          std::string deviceName = devices[0].getInfo<CL_DEVICE_NAME>();
+          std::cout << "Device: (" << d << "): " << deviceName << std::endl;
+          if(deviceName.find("u280") != std::string::npos){
+            device = devices[0];
+            found_device = true;
+            break;
+          } else {
+            devices.erase(devices.begin());
+          }
+        }
       }
     }
   }
+  // return EXIT_FAILURE;
   if (found_device == false) {
     std::cout << "Error: Unable to find Target Device "
               << device.getInfo<CL_DEVICE_NAME>() << std::endl;
@@ -48,25 +60,98 @@ int setupDevice(std::vector<cl::Device>& devices, cl::Device& device){
   devices.resize(1);
 }
 
+int printTiming(std::string str, std::chrono::_V2::system_clock::time_point& begin){
+  auto end = std::chrono::high_resolution_clock::now();
+  int diffus = std::chrono::duration_cast<std::chrono::microseconds>(end-begin).count();
+  printf(str.c_str(), diffus);
+  begin = end;
+  return diffus;
+}
 
-// #define NUM_TRACKS 1
-// #define NUM_TRACKS 100
+
+// #define DOPRINT
+// #define PRINT_INNER_TIMINGS
+
+// void runFPGA(cl::CommandQueue& q, cl::Kernel& kernel, cl::Buffer buffer_a, cl::Buffer& buffer_result, input_raw_t *ptr_a, result_t *ptr_result, float *in1, float *out1){
+void runFPGA(cl::CommandQueue& q, cl::Kernel& kernel, cl::Buffer buffer_a, cl::Buffer& buffer_result, input_raw_t *ptr_a, result_t *ptr_result, input_raw_t *in1, result_t *out1, size_t in_size, size_t out_nn_size, int num_trk){
+
+  #ifdef PRINT_INNER_TIMINGS
+  auto begin = std::chrono::high_resolution_clock::now();
+  #endif
+
+  memcpy(ptr_a, in1, in_size);
+
+  #ifdef PRINT_INNER_TIMINGS
+  printTiming(" |Mem Copy In:\n |  %d us\n", begin);
+  #endif
+
+  // std::cout << "setting input data" << std::endl;
+  // for(int j = 0; j < num_trk; j++){
+  //   for(int i = 0; i < N_INPUT_1_1; i++){
+  //     std::cout << ptr_a[i + N_INPUT_1_1 * j] << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+  // #ifdef PRINT_INNER_TIMINGS
+  // printTiming(" |Print In Data:\n |  %d us\n", begin);
+  // #endif
+
+  // Data will be migrated to kernel space
+  q.enqueueMigrateMemObjects({buffer_a}, 0); // 0 means from host
+
+  // Launch the Kernel
+  q.enqueueTask(kernel);
+
+  // This call will transfer the data from FPGA to host array
+  q.enqueueMigrateMemObjects({buffer_result}, CL_MIGRATE_MEM_OBJECT_HOST);
+
+  #ifdef PRINT_INNER_TIMINGS
+  printTiming(" |enqueue:\n |  %d us\n", begin);
+  #endif
+
+  q.finish();
+
+  #ifdef PRINT_INNER_TIMINGS
+  printTiming(" |Called FPGA:\n |  %d us\n", begin);
+  #endif
+
+  memcpy(out1, ptr_result, out_nn_size);
+
+  #ifdef PRINT_INNER_TIMINGS
+  printTiming(" |Mem Copy out:\n |  %d us\n", begin);
+  #endif
+
+  // std::cout << "Result: \n\n";
+  // for(int j = 0; j < num_trk; j++){
+  //   for(int i = 0; i < N_LAYER_8; i++){
+  //     std::cout << ptr_result[i + N_LAYER_8 * j] << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+  // #ifdef PRINT_INNER_TIMINGS
+  // printTiming(" |Print Output:\n |  %d us\n", begin);
+  // #endif
+}
 
 
+// void setupRun(cl::Program& program, cl::Context& context, cl::CommandQueue& q, float *in1, float *out1){
+int setupRun(cl::Program& program, cl::Context& context, cl::CommandQueue& q, input_raw_t *in1, result_t *out1, int num_trk){
+  auto begin = std::chrono::high_resolution_clock::now();
 
-void setupRun(cl::Program& program, cl::Context& context, cl::CommandQueue& q, float *in1, float *out1){
-
-  // this could be abstractified in some function/class probably
-  size_t in_size = sizeof(input_raw_t) * N_INPUT_1_1 * NUM_TRACKS;
+  size_t in_size = sizeof(input_raw_t) * N_INPUT_1_1 * num_trk;
   cl::Buffer buffer_a(context, CL_MEM_READ_ONLY, in_size);
+
+  printTiming("Buffer In:\n  %d us\n", begin);
+
   input_raw_t *ptr_a = (input_raw_t *)q.enqueueMapBuffer(buffer_a, CL_TRUE, CL_MAP_WRITE, 0, in_size);
 
+  printTiming("EnqueueMap In:\n  %d us\n", begin);
 
-  size_t out_nn_size = sizeof(result_t) * N_LAYER_8 * NUM_TRACKS;
+  size_t out_nn_size = sizeof(result_t) * N_LAYER_8 * num_trk;
   cl::Buffer buffer_result(context, CL_MEM_WRITE_ONLY, out_nn_size);
   result_t *ptr_result = (result_t *)q.enqueueMapBuffer(buffer_result, CL_TRUE, CL_MAP_READ, 0, out_nn_size);
 
-
+  printTiming("EnqueueMap Out:\n  %d us\n", begin);
 
   cl::Kernel rkernel(program, "runner");
   
@@ -74,59 +159,29 @@ void setupRun(cl::Program& program, cl::Context& context, cl::CommandQueue& q, f
   int narg = 0;
   rkernel.setArg(narg++, buffer_a);
   rkernel.setArg(narg++, buffer_result);
+  rkernel.setArg(narg++, num_trk);
 
+  printTiming("Initializing:\n  %d us\n", begin);
 
-  std::cout << "setting input data" << std::endl;
-
-  for(int j = 0; j < NUM_TRACKS; j++){
-    for(int i = 0; i < N_INPUT_1_1; i++){
-      ptr_a[i + N_INPUT_1_1 * j] = in1[i + N_INPUT_1_1 * j];
-      std::cout << ptr_a[i + N_INPUT_1_1 * j] << " ";
-    }
-    std::cout << std::endl;
+  int num_sends = 1;
+  printf(" ┌------- sending %dx of %d tracks \n", num_sends, num_trk);
+  for(int i = 0; i < num_sends; i++){
+    runFPGA(q, rkernel, buffer_a, buffer_result, ptr_a, ptr_result, in1, out1, in_size, out_nn_size, num_trk);
   }
+  std::cout << " └>Total on FPGA+transfer run: " << num_sends << " sends\n      ";
+  int timingFPGA = printTiming("%d us\n", begin);
+  std::cout << "       per send : " << timingFPGA/num_sends << " us" << std::endl;
+  std::cout << "       per track: " << float(1000*timingFPGA/num_sends)/num_trk << " ns !!" << std::endl;
 
-
-  std::cout << "\n\n" << std::endl;
-
-  std::cout << "running fpga" << std::endl;
-
-
-  // Data will be migrated to kernel space
-  q.enqueueMigrateMemObjects({buffer_a}, 0); // 0 means from host
-
-  // Launch the Kernel
-  q.enqueueTask(rkernel);
-
-  // This call will transfer the data from FPGA to host array
-  q.enqueueMigrateMemObjects({buffer_result}, CL_MIGRATE_MEM_OBJECT_HOST);
-
-  std::cout << "calling finish" << std::endl; 
-
-  q.finish();
-
-  // printing out data
-  // std::cout << "\n\nNN Out: " << std::endl;
-  // for (int i = 0; i < N_INPUT_1_1; i++) {
-  //   out1[i] = ptr_rot[i];
-  //   std::cout << out1[i] << " ";
-  // }
-  // std::cout << "\n\n\n" << std::endl;
-
-  std::cout << "Result: \n" << std::endl;
-  for(int j = 0; j < NUM_TRACKS; j++){
-    for(int i = 0; i < N_LAYER_8; i++){
-      std::cout << ptr_result[i + N_LAYER_8 * j] << " ";
-    }
-    std::cout << std::endl;
-  }
-
-  std::cout << std::endl;
 
   q.enqueueUnmapMemObject(buffer_a, ptr_a);
   q.enqueueUnmapMemObject(buffer_result, ptr_result);
   q.finish();
+
+  printTiming("enqueueUnmap:\n  %d us\n", begin);
+  return timingFPGA/num_sends;
 }
+
 
 int main(int argc, char *argv[]) {
 
@@ -170,53 +225,97 @@ int main(int argc, char *argv[]) {
 
   printf("INITIALIZING DATA\n");
 
-  // float* in1 = new float[N_INPUT_1_1];
-  // for(int i = 0; i < N_INPUT_1_1; i++){
-  //   in1[i] = i * 2.346547; // some random decimal to produce some decimal results
-  // }
-  
-  std::ifstream file("inputs.dat");
-  std::string sa;
-  float* in1 = new float[N_INPUT_1_1 * NUM_TRACKS];
+  for(int tid = 0; tid < test_nums; tid++){
+    int num_trk = number_tracks[tid];
+    printf("\n\n\nRunning with %d tracks\n", num_trk);
+    
+    std::ifstream file("inputs.dat");
+    std::string sa;
+    // float* in1 = new float[N_INPUT_1_1 * num_trk];
+    input_raw_t* in1 = new input_raw_t[N_INPUT_1_1 * num_trk];
 
-  int skip_first = 0; // skip first few tracks
+    int skip_first = 0; // skip first few tracks
 
-  if(argc > 2){
-    skip_first = std::stod(argv[2]);
-    std::cout << "read argv" << std::endl;
-  }
-
-  std::cout << "skip first: #" << skip_first << std::endl;
-  for(int d = 0; d < skip_first; d++){
-    for(int i = 0; i < N_INPUT_1_1; i++){
-      getline(file, sa);
+    if(argc > 2){
+      skip_first = std::stod(argv[2]);
+      std::cout << "read argv" << std::endl;
     }
-  }
 
-  int skip_n = 5; // number of tracks to skip in between reads so not the "same" track appears in same batch
-  int number_lines_in_file = 9288;
-  int maxNum = (number_lines_in_file / N_INPUT_1_1) - skip_first - (NUM_TRACKS * skip_n);
-
-  if(maxNum < 0){
-    printf("data will run out, try smaller skip_n or skip_first: %d\n", maxNum);
-    throw -1;
-  }
-
-
-  for(int j = 0; j < NUM_TRACKS; j++){
-    for(int i = 0; i < N_INPUT_1_1; i++){
-      getline(file, sa);
-      in1[i + N_INPUT_1_1 * j] = std::stof(sa);
+    std::cout << "skip first: #" << skip_first << std::endl;
+    for(int d = 0; d < skip_first; d++){
+      for(int i = 0; i < N_INPUT_1_1; i++){
+        getline(file, sa);
+      }
     }
-    for(int i = 0; i < N_INPUT_1_1 * skip_n; i++){
-      getline(file, sa);
+
+    int skip_n = 0; // number of tracks to skip in between reads so not the "same" track appears in same batch
+    int number_lines_in_file = 9288;
+    int maxNum = (number_lines_in_file / N_INPUT_1_1) - skip_first - (num_trk * skip_n);
+
+    // if(maxNum < 0){
+    //   printf("data will run out, try smaller skip_n or skip_first: %d\n", maxNum);
+    //   throw -1;
+    // }
+
+    auto begin = std::chrono::high_resolution_clock::now();
+
+    for(int j = 0; j < num_trk; j++){
+      for(int i = 0; i < N_INPUT_1_1; i++){
+        getline(file, sa);
+        in1[i + N_INPUT_1_1 * j] = std::stof(sa);
+      }
+      if((j+1)*N_INPUT_1_1 >= number_lines_in_file){
+        // printf("reset\n");
+        file.seekg(file.beg);
+      }
+      for(int i = 0; i < N_INPUT_1_1 * skip_n; i++){
+        getline(file, sa);
+      }
     }
+
+    printTiming("Read File and Convert\n  %d us \n", begin);
+
+    // float* out1 = new float[N_LAYER_8 * num_trk];
+    result_t* out1 = new result_t[N_LAYER_8 * num_trk];
+    printf("\nRUNNING FPGA\n\n");
+
+    printTiming("Init out1\n  %d us \n", begin);
+    int timingFPGA = setupRun(program, context, q, in1, out1, num_trk);
+    track_timing_full[tid] = timingFPGA;
+    track_timing_single[tid] = (1000*timingFPGA)/num_trk;
+    printTiming("Finished %d us\n", begin);
+
+    // std::cout << "Result: \n\n";
+    // for(int j = 0; j < num_trk; j++){
+    //   for(int i = 0; i < N_LAYER_8; i++){
+    //     std::cout << float(out1[i + N_LAYER_8 * j]) << " ";
+    //   }
+    //   std::cout << std::endl;
+    // }
+    // printTiming("Printing %d us\n", begin);
   }
 
-  float* out1 = new float[N_LAYER_8 * NUM_TRACKS];
-  printf("\nRUNNING FPGA\n\n");
-  setupRun(program, context, q, in1, out1);
+  printf("\n\n");
 
-  std::cout << "Finished" << std::endl;
+  for(int i = 0; i < test_nums; i++){
+    printf("num tracks: %d\n", number_tracks[i]);
+    printf("  full: %d us\n", track_timing_full[i]);
+    printf("  trk : %d ns\n", track_timing_single[i]);
+  }
+
+  printf("\n");
+
+  printPythonList(number_tracks, test_nums, "num_trk");
+  printPythonList(track_timing_full, test_nums, "full_time");
+  printPythonList(track_timing_single, test_nums, "track_time");
+
   return 0;
+}
+
+void printPythonList(int* arr, size_t size, std::string name){
+  printf("%s = np.array([", name.c_str());
+  for(int i = 0; i < size-1; i++){
+    printf("%d,",arr[i]);
+  }
+  printf("%d])\n",arr[size-1]);
 }

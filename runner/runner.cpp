@@ -10,7 +10,8 @@
 
 // void full_network(input_raw_t in1[N_INPUT_1_1], result_t out1[N_LAYER_8]);
 
-void runner(input_raw_t in1_gmem[N_INPUT_1_1 * NUM_TRACKS], result_t out1_gmem[N_LAYER_8 * NUM_TRACKS]){
+// void runner(input_raw_t in1_gmem[N_INPUT_1_1 * NUM_TRACKS], result_t out1_gmem[N_LAYER_8 * NUM_TRACKS]){
+void runner(input_raw_t* in1_gmem, result_t* out1_gmem, int number_tracks){
 
   // #pragma HLS INTERFACE s_axilite port=return bundle=runner_port
   // #pragma HLS INTERFACE m_axi port=in1_gmem  offset=slave bundle=input
@@ -26,7 +27,8 @@ void runner(input_raw_t in1_gmem[N_INPUT_1_1 * NUM_TRACKS], result_t out1_gmem[N
   // out1_gmem[0] = in1_gmem[0];
 
   MAIN_RUNNER:
-  for(int trkNum = 0; trkNum < NUM_TRACKS; trkNum++){
+  // for(int trkNum = 0; trkNum < NUM_TRACKS; trkNum++){
+  for(int trkNum = 0; trkNum < number_tracks; trkNum++){
     // #pragma HLS PIPELINE off
     #pragma HLS PIPELINE II=3
     hls::vector<input_raw_t,N_INPUT_1_1> in1_loc;

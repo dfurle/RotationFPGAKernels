@@ -1,8 +1,10 @@
 {
   "C_Cpp.default.includePath": [
     "/opt/xilinx/xrt/include",
-    "${XILINX_HLS}/include/",
-    "${XILINX_HLS}/include/etc/",
+    // "${XILINX_HLS}/include/",
+    // "${XILINX_HLS}/include/etc/",
+    "/tools/Xilinx/Vitis_HLS/2021.2/include/",
+    "/tools/Xilinx/Vitis_HLS/2021.2/include/etc/",
     "${workspaceFolder}/hlsProject/firmware",
     // "${workspaceFolder}/hlsProject/firmware",
     "${workspaceFolder}/rotationKernel",

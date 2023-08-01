@@ -2,9 +2,9 @@
 # name of .xcl file
 HLS_NAME := TrackClassification
 # xilinx part to be used
-PART := xilinx_u200_gen3x16_xdma_2_202110_1
+PART := xilinx_u280_xdma_201920_3
 # emulation mode (sw_emu, hw_emu, hw)
-EMU_MODE := hw_emu
+EMU_MODE := hw
 
 ########
 
@@ -23,7 +23,8 @@ all: host compile link
 
 HOST_SRC := ${WORK}/host.cpp
 host.exe: $(HOST_SRC)
-	g++ -g -std=c++17 -Wall -O0 $(HOST_SRC) -o ./host.exe -I${WORK}/runner/ -I${XILINX_XRT}/include/ -I${XILINX_HLS}/include/ -L${XILINX_XRT}/lib ${LDFLAGS}
+	g++ -g -std=c++11 -Wall -O0 $(HOST_SRC) -o ./host.exe -I${WORK}/runner/ -I${XILINX_XRT}/include/ -I${XILINX_HLS}/include/ -L${XILINX_XRT}/lib ${LDFLAGS}
+# g++ -g -std=c++14 -Wall -O0 $(HOST_SRC) -o ./host.exe -I${WORK}/runner/ -I${XILINX_XRT}/include/ -I${XILINX_HLS}/include/ -L${XILINX_XRT}/lib ${LDFLAGS}
 	
 NN_DIR := ${WORK}/hlsProject
 NN_SRC := ${NN_DIR}/firmware/NNFakeOverlap.cpp
@@ -34,23 +35,22 @@ ROTATION_SRC := ${ROTATION_DIR}/rotationKernel.cpp
 ROTATION_INCLUDE := -I${ROTATION_DIR}
 
 KERNEL_SRC := ${WORK}/runner/runner.cpp ${NN_SRC} ${ROTATION_SRC}
-KERNEL_INCLUDE := ${WORK}/runner ${NN_INCLUDE} ${ROTATION_INCLUDE}
+KERNEL_INCLUDE := -I${WORK}/runner ${NN_INCLUDE} ${ROTATION_INCLUDE}
 KERNEL_CFG := ${WORK}/runner/hls_config.cfg
 KERNEL_NAME := runner
 
 ${KERNEL_NAME}.xo: ${KERNEL_SRC} ${KERNEL_CFG}
 	mkdir -p ./kernels
+#v++ -c --mode hls --config ${KERNEL_CFG} &&
 	cd ./kernels; \
-	v++ -c --mode hls --config ${KERNEL_CFG} && \
-	mv ${BUILDPATH}/kernels/${KERNEL_NAME}/${KERNEL_NAME}.xo ${BUILDPATH}/; \
-	cd ${BUILDPATH}
+	v++ -c -t ${EMU_MODE} --platform ${PART} -k ${KERNEL_NAME} ${KERNEL_INCLUDE} ${KERNEL_SRC} -o ${KERNEL_NAME}.xo && \
+	mv ${BUILDPATH}/kernels/${KERNEL_NAME}.xo ${BUILDPATH}/
 
 ${HLS_NAME}.xclbin: $(KERNEL_NAME).xo emconfig.json ${WORK}/runner/config.cfg
 	mkdir -p ${BUILDPATH}/xclbin
 	cd ${BUILDPATH}/xclbin; \
 	v++ -l -t $(EMU_MODE) --platform $(PART) --config ${WORK}/runner/config.cfg ${BUILDPATH}/$(KERNEL_NAME).xo -o $(HLS_NAME).xclbin && \
-	mv ${BUILDPATH}/xclbin/${HLS_NAME}.xclbin ${BUILDPATH}/; \
-	cd ${BUILDPATH}
+	mv ${BUILDPATH}/xclbin/${HLS_NAME}.xclbin ${BUILDPATH}/
 
 export.sh: ${HLS_NAME}.xclbin
 	@echo "export XCL_EMULATION_MODE=$(EMU_MODE)\n" > export.sh
