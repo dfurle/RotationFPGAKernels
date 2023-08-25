@@ -97,19 +97,40 @@ void runFPGA(cl::CommandQueue& q, cl::Kernel& kernel, cl::Buffer buffer_a, cl::B
   // #endif
 
   // Data will be migrated to kernel space
-  q.enqueueMigrateMemObjects({buffer_a}, 0); // 0 means from host
+  cl::Event write_event;
+  q.enqueueMigrateMemObjects({buffer_a}, 0, NULL, &write_event); // 0 means from host
 
   // Launch the Kernel
-  q.enqueueTask(kernel);
+  cl::Event run_event;
+  q.enqueueTask(kernel, NULL, &run_event);
 
   // This call will transfer the data from FPGA to host array
-  q.enqueueMigrateMemObjects({buffer_result}, CL_MIGRATE_MEM_OBJECT_HOST);
+  cl::Event read_event;
+  q.enqueueMigrateMemObjects({buffer_result}, CL_MIGRATE_MEM_OBJECT_HOST, NULL, &write_event);
 
   #ifdef PRINT_INNER_TIMINGS
   printTiming(" |enqueue:\n |  %d us\n", begin);
   #endif
 
   q.finish();
+
+
+  cl_ulong write_start = write_event.getProfilingInfo<CL_PROFILING_COMMAND_START>();
+  cl_ulong write_end = write_event.getProfilingInfo<CL_PROFILING_COMMAND_END>();
+  cl_ulong write_time = write_end - write_start;
+  std::cout << "[HOST] Write buffer time is " << std::dec << write_time << " ns" << std::endl;
+
+  cl_ulong run_start = run_event.getProfilingInfo<CL_PROFILING_COMMAND_START>();
+  cl_ulong run_end = run_event.getProfilingInfo<CL_PROFILING_COMMAND_END>();
+  cl_ulong run_time = run_end - run_start;
+  std::cout << "[HOST] Kernel run time is " << std::dec << run_time << " ns" << std::endl;
+
+  cl_ulong read_start = read_event.getProfilingInfo<CL_PROFILING_COMMAND_START>();
+  cl_ulong read_end = read_event.getProfilingInfo<CL_PROFILING_COMMAND_END>();
+  cl_ulong read_time = read_end - read_start;
+  std::cout << "[HOST] Read buffer time is " << std::dec << read_time << " ns" << std::endl;
+
+
 
   #ifdef PRINT_INNER_TIMINGS
   printTiming(" |Called FPGA:\n |  %d us\n", begin);
