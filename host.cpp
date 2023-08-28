@@ -40,7 +40,7 @@ int setupDevice(std::vector<cl::Device>& devices, cl::Device& device){
         for(size_t d = 0; d < devices.size(); d++){
           std::string deviceName = devices[0].getInfo<CL_DEVICE_NAME>();
           std::cout << "Device: (" << d << "): " << deviceName << std::endl;
-          if(deviceName.find("u280") != std::string::npos){
+          if(deviceName.find("u200") != std::string::npos){
             device = devices[0];
             found_device = true;
             break;
@@ -73,7 +73,7 @@ int printTiming(std::string str, std::chrono::_V2::system_clock::time_point& beg
 // #define PRINT_INNER_TIMINGS
 
 // void runFPGA(cl::CommandQueue& q, cl::Kernel& kernel, cl::Buffer buffer_a, cl::Buffer& buffer_result, input_raw_t *ptr_a, result_t *ptr_result, float *in1, float *out1){
-void runFPGA(cl::CommandQueue& q, cl::Kernel& kernel, cl::Buffer buffer_a, cl::Buffer& buffer_result, input_raw_t *ptr_a, result_t *ptr_result, input_raw_t *in1, result_t *out1, size_t in_size, size_t out_nn_size, int num_trk){
+void runFPGA(cl::CommandQueue& q, cl::Kernel& kernelread, cl::Kernel& kernelrun, cl::Kernel& kernelwrite, cl::Buffer buffer_a, cl::Buffer& buffer_result, input_raw_t *ptr_a, result_t *ptr_result, input_raw_t *in1, result_t *out1, size_t in_size, size_t out_nn_size, int num_trk){
 
   #ifdef PRINT_INNER_TIMINGS
   auto begin = std::chrono::high_resolution_clock::now();
@@ -101,12 +101,16 @@ void runFPGA(cl::CommandQueue& q, cl::Kernel& kernel, cl::Buffer buffer_a, cl::B
   q.enqueueMigrateMemObjects({buffer_a}, 0, NULL, &write_event); // 0 means from host
 
   // Launch the Kernel
-  cl::Event run_event;
-  q.enqueueTask(kernel, NULL, &run_event);
+  cl::Event run_event_read;
+  cl::Event run_event_run;
+  cl::Event run_event_write;
+  q.enqueueTask(kernelread,  NULL, &run_event_read);
+  q.enqueueTask(kernelrun,   NULL, &run_event_run);
+  q.enqueueTask(kernelwrite, NULL, &run_event_write);
 
   // This call will transfer the data from FPGA to host array
   cl::Event read_event;
-  q.enqueueMigrateMemObjects({buffer_result}, CL_MIGRATE_MEM_OBJECT_HOST, NULL, &write_event);
+  q.enqueueMigrateMemObjects({buffer_result}, CL_MIGRATE_MEM_OBJECT_HOST, NULL, &read_event);
 
   #ifdef PRINT_INNER_TIMINGS
   printTiming(" |enqueue:\n |  %d us\n", begin);
@@ -120,10 +124,20 @@ void runFPGA(cl::CommandQueue& q, cl::Kernel& kernel, cl::Buffer buffer_a, cl::B
   cl_ulong write_time = write_end - write_start;
   std::cout << "[HOST] Write buffer time is " << std::dec << write_time << " ns" << std::endl;
 
-  cl_ulong run_start = run_event.getProfilingInfo<CL_PROFILING_COMMAND_START>();
-  cl_ulong run_end = run_event.getProfilingInfo<CL_PROFILING_COMMAND_END>();
-  cl_ulong run_time = run_end - run_start;
-  std::cout << "[HOST] Kernel run time is " << std::dec << run_time << " ns" << std::endl;
+  cl_ulong run_start_read = run_event_read.getProfilingInfo<CL_PROFILING_COMMAND_START>();
+  cl_ulong run_end_read = run_event_read.getProfilingInfo<CL_PROFILING_COMMAND_END>();
+  cl_ulong run_time_read = run_end_read - run_start_read;
+  std::cout << "[HOST] Kernel read time is " << std::dec << run_time_read << " ns" << std::endl;
+
+  cl_ulong run_start_run = run_event_run.getProfilingInfo<CL_PROFILING_COMMAND_START>();
+  cl_ulong run_end_run = run_event_run.getProfilingInfo<CL_PROFILING_COMMAND_END>();
+  cl_ulong run_time_run = run_end_run - run_start_run;
+  std::cout << "[HOST] Kernel run time is " << std::dec << run_time_run << " ns" << std::endl;
+
+  cl_ulong run_start_write = run_event_write.getProfilingInfo<CL_PROFILING_COMMAND_START>();
+  cl_ulong run_end_write = run_event_write.getProfilingInfo<CL_PROFILING_COMMAND_END>();
+  cl_ulong run_time_write = run_end_write - run_start_write;
+  std::cout << "[HOST] Kernel write time is " << std::dec << run_time_write << " ns" << std::endl;
 
   cl_ulong read_start = read_event.getProfilingInfo<CL_PROFILING_COMMAND_START>();
   cl_ulong read_end = read_event.getProfilingInfo<CL_PROFILING_COMMAND_END>();
@@ -142,13 +156,13 @@ void runFPGA(cl::CommandQueue& q, cl::Kernel& kernel, cl::Buffer buffer_a, cl::B
   printTiming(" |Mem Copy out:\n |  %d us\n", begin);
   #endif
 
-  // std::cout << "Result: \n\n";
-  // for(int j = 0; j < num_trk; j++){
-  //   for(int i = 0; i < N_LAYER_8; i++){
-  //     std::cout << ptr_result[i + N_LAYER_8 * j] << " ";
-  //   }
-  //   std::cout << std::endl;
-  // }
+  std::cout << "Result: \n\n";
+  for(int j = 0; j < num_trk; j++){
+    for(int i = 0; i < N_LAYER_8; i++){
+      std::cout << ptr_result[i + N_LAYER_8 * j] << " ";
+    }
+    std::cout << std::endl;
+  }
   // #ifdef PRINT_INNER_TIMINGS
   // printTiming(" |Print Output:\n |  %d us\n", begin);
   // #endif
@@ -174,20 +188,20 @@ int setupRun(cl::Program& program, cl::Context& context, cl::CommandQueue& q, in
 
   printTiming("EnqueueMap Out:\n  %d us\n", begin);
 
-  cl::Kernel rkernel(program, "runner");
+  cl::Kernel readkernel(program, "readMemory");
+  cl::Kernel runkernel(program, "runner");
+  cl::Kernel writekernel(program, "writeMemory");
   
   // set the kernel Arguments
-  int narg = 0;
-  rkernel.setArg(narg++, buffer_a);
-  rkernel.setArg(narg++, buffer_result);
-  rkernel.setArg(narg++, num_trk);
+  readkernel.setArg(0, buffer_a);
+  writekernel.setArg(0, buffer_result);
 
   printTiming("Initializing:\n  %d us\n", begin);
 
   int num_sends = 1;
   printf(" ┌------- sending %dx of %d tracks \n", num_sends, num_trk);
   for(int i = 0; i < num_sends; i++){
-    runFPGA(q, rkernel, buffer_a, buffer_result, ptr_a, ptr_result, in1, out1, in_size, out_nn_size, num_trk);
+    runFPGA(q, readkernel, runkernel, writekernel, buffer_a, buffer_result, ptr_a, ptr_result, in1, out1, in_size, out_nn_size, num_trk);
   }
   std::cout << " └>Total on FPGA+transfer run: " << num_sends << " sends\n      ";
   int timingFPGA = printTiming("%d us\n", begin);

@@ -10,8 +10,62 @@
 
 // void full_network(input_raw_t in1[N_INPUT_1_1], result_t out1[N_LAYER_8]);
 
+void readMemory(input_raw_t* in1_gmem, hls::stream<hls::vector<hls::vector<input_raw_t, N_INPUT_1_1>, NUM_TRACKS>>& in1_stream){
+  #pragma HLS INTERFACE m_axi port=in1_gmem bundle=aximm1
+  #pragma HLS INTERFACE axis port=in1_stream
+  hls::vector<hls::vector<input_raw_t,N_INPUT_1_1>, NUM_TRACKS> in1_vec;
+  MAIN_RUNNER:
+  for(int trkNum = 0; trkNum < NUM_TRACKS; trkNum++){
+    // #pragma HLS PIPELINE off
+    #pragma HLS PIPELINE II=3
+
+    // input_raw_t buff[24];
+    // memcpy(buff, (const input_raw_t*) in1_gmem, 24 * sizeof(input_raw_t));
+
+    READ_DATA:
+    for(int i = 0; i < N_INPUT_1_1; i++){
+      #pragma HLS unroll
+      in1_vec[trkNum][i] = in1_gmem[i + (N_INPUT_1_1 * trkNum)];
+      // in1_loc[i] = buff[i];
+    }
+  }
+  in1_stream << in1_vec;
+}
+
+void writeMemory(result_t* out1_gmem, hls::stream<hls::vector<hls::vector<result_t, N_LAYER_8>, NUM_TRACKS>>& out1_stream){
+  #pragma HLS INTERFACE m_axi port=out1_gmem bundle=aximm1
+  #pragma HLS INTERFACE axis port=out1_stream
+  hls::vector<hls::vector<result_t,N_LAYER_8>, NUM_TRACKS> out1_vec;
+  out1_stream >> out1_vec;
+  MAIN_RUNNER:
+  for(int trkNum = 0; trkNum < NUM_TRACKS; trkNum++){
+    // #pragma HLS PIPELINE off
+    #pragma HLS PIPELINE II=3
+
+    // input_raw_t buff[24];
+    // memcpy(buff, (const input_raw_t*) in1_gmem, 24 * sizeof(input_raw_t));
+
+    WRITE_DATA:
+    for(int i = 0; i < N_LAYER_8; i++){
+      #pragma HLS unroll
+      out1_gmem[i + (N_LAYER_8 * trkNum)] = out1_vec[trkNum][i];
+    }
+  }
+}
+
 // void runner(input_raw_t in1_gmem[N_INPUT_1_1 * NUM_TRACKS], result_t out1_gmem[N_LAYER_8 * NUM_TRACKS]){
-void runner(input_raw_t* in1_gmem, result_t* out1_gmem, int number_tracks){
+void runner(hls::stream<hls::vector<hls::vector<input_raw_t, N_INPUT_1_1>, NUM_TRACKS>>& in1_stream, hls::stream<hls::vector<hls::vector<result_t, N_LAYER_8>, NUM_TRACKS>>& out1_stream){
+  #pragma HLS INTERFACE axis port=in1_stream
+  #pragma HLS INTERFACE axis port=out1_stream
+  // #pragma HLS interface ap_ctrl_none port=return
+  const int number_tracks = NUM_TRACKS;
+
+
+  hls::vector<hls::vector<input_raw_t,N_INPUT_1_1>, NUM_TRACKS> in1_vec;
+  hls::vector<hls::vector<result_t,N_LAYER_8>, NUM_TRACKS> out1_vec;
+
+  in1_stream >> in1_vec;
+
 
   // #pragma HLS INTERFACE s_axilite port=return bundle=runner_port
   // #pragma HLS INTERFACE m_axi port=in1_gmem  offset=slave bundle=input
@@ -31,31 +85,17 @@ void runner(input_raw_t* in1_gmem, result_t* out1_gmem, int number_tracks){
   for(int trkNum = 0; trkNum < number_tracks; trkNum++){
     // #pragma HLS PIPELINE off
     #pragma HLS PIPELINE II=3
-    hls::vector<input_raw_t,N_INPUT_1_1> in1_loc;
-
-    // input_raw_t buff[24];
-    // memcpy(buff, (const input_raw_t*) in1_gmem, 24 * sizeof(input_raw_t));
-
-    READ_DATA:
-    for(int i = 0; i < N_INPUT_1_1; i++){
-      #pragma HLS unroll
-      in1_loc[i] = in1_gmem[i + (N_INPUT_1_1 * trkNum)];
-      // in1_loc[i] = buff[i];
-    }
+    hls::vector<input_raw_t,N_INPUT_1_1> in1_loc = in1_vec[trkNum];
 
     hls::vector<layer1_t,N_INPUT_1_1> rot_loc;
     rotationKernel(in1_loc, rot_loc);
 
     hls::vector<result_t,N_LAYER_8> out1_loc;
     NN::NNFakeOverlap(rot_loc, out1_loc);
-    // out1_loc[0] = in1_loc[0];
 
-    WRITE_DATA:
-    for(int i = 0; i < N_LAYER_8; i++){
-      #pragma HLS unroll
-      out1_gmem[i + (N_LAYER_8 * trkNum)] = out1_loc[i];
-    }
+    out1_vec[trkNum] = out1_loc;
   }
+  out1_stream << out1_vec;
 
   //  other
 
