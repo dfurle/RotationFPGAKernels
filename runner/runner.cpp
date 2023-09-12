@@ -49,13 +49,6 @@ void runner(input_raw_t* in1_gmem, result_t* out1_gmem, int number_tracks)
     hls::vector<NN::input_t,N_INPUT_1_1> rot_loc;
     rotationKernel(in1_loc, rot_loc);
 
-    for(int i = 0; i < N_INPUT_1_1; i++)
-    {
-      float x = rot_loc[i];
-      std::cout<<x<<" ";
-    }
-    std::cout<<std::endl;
-
     hls::vector<result_t,N_LAYER_8> out1_loc;
     NN::NNFakeOverlap(rot_loc, out1_loc);
     // out1_loc[0] = in1_loc[0];

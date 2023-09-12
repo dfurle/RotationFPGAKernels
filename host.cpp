@@ -298,11 +298,6 @@ int main(int argc, char *argv[]) {
     track_timing_single[tid] = (1000*timingFPGA)/num_trk;
     printTiming("Finished %d us\n", begin);
 
-    for(int i = 0; i < N_LAYER_8 * num_trk; i++)
-    {
-      std::cout<<"out: "<<out1[i]<<std::endl;
-    }
-
     // std::cout << "Result: \n\n";
     // for(int j = 0; j < num_trk; j++){
     //   for(int i = 0; i < N_LAYER_8; i++){
