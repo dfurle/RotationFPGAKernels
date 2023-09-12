@@ -17,7 +17,7 @@
 
 namespace NN{
 // hls-fpga-machine-learning insert weights
-#define __SYNTHESIS__
+// #define __SYNTHESIS__
 #include "weights/w2.h"
 #include "weights/b2.h"
 #include "weights/s4.h"
@@ -28,7 +28,7 @@ namespace NN{
 #include "weights/b7.h"
 #include "weights/w8.h"
 #include "weights/b8.h"
-#undef __SYNTHESIS__
+// #undef __SYNTHESIS__
 /// hls-fpga-machine-learning insert layer-config
 // DenseNN0_Dense
 struct config2 : nnet::dense_config {
