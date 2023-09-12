@@ -8,8 +8,9 @@
 
 // #include "ap_fixed.h"
 
-const size_t test_nums = 7;
-int number_tracks[test_nums] = {1,10,100,1000,10000,50000, 100000};
+const size_t test_nums = 1;
+// int number_tracks[test_nums] = {1,1000,10000,50000, 100000};
+int number_tracks[test_nums] = {10};
 int track_timing_full[test_nums];
 int track_timing_single[test_nums];
 void printPythonList(int* arr, size_t size, std::string name);
@@ -40,13 +41,13 @@ int setupDevice(std::vector<cl::Device>& devices, cl::Device& device){
         for(size_t d = 0; d < devices.size(); d++){
           std::string deviceName = devices[0].getInfo<CL_DEVICE_NAME>();
           std::cout << "Device: (" << d << "): " << deviceName << std::endl;
-          if(deviceName.find("u280") != std::string::npos){
+          // if(deviceName.find("u280") != std::string::npos){
             device = devices[0];
             found_device = true;
-            break;
-          } else {
-            devices.erase(devices.begin());
-          }
+            // break;
+          // } else {
+            // devices.erase(devices.begin());
+          // }
         }
       }
     }
@@ -246,51 +247,42 @@ int main(int argc, char *argv[]) {
 
   printf("INITIALIZING DATA\n");
 
-  for(int tid = 0; tid < test_nums; tid++){
+  for(int tid = 0; tid < test_nums; tid++)
+  {
     int num_trk = number_tracks[tid];
     printf("\n\n\nRunning with %d tracks\n", num_trk);
     
-    std::ifstream file("inputs.dat");
+    std::ifstream file("tb_input_features_original.dat");
     std::string sa;
-    // float* in1 = new float[N_INPUT_1_1 * num_trk];
+
     input_raw_t* in1 = new input_raw_t[N_INPUT_1_1 * num_trk];
 
     int skip_first = 0; // skip first few tracks
 
-    if(argc > 2){
+    if(argc > 2)
+    {
       skip_first = std::stod(argv[2]);
       std::cout << "read argv" << std::endl;
     }
 
     std::cout << "skip first: #" << skip_first << std::endl;
-    for(int d = 0; d < skip_first; d++){
-      for(int i = 0; i < N_INPUT_1_1; i++){
+    for(int d = 0; d < skip_first; d++)
+    {
         getline(file, sa);
-      }
     }
 
-    int skip_n = 0; // number of tracks to skip in between reads so not the "same" track appears in same batch
-    int number_lines_in_file = 9288;
-    int maxNum = (number_lines_in_file / N_INPUT_1_1) - skip_first - (num_trk * skip_n);
-
-    // if(maxNum < 0){
-    //   printf("data will run out, try smaller skip_n or skip_first: %d\n", maxNum);
-    //   throw -1;
-    // }
 
     auto begin = std::chrono::high_resolution_clock::now();
 
-    for(int j = 0; j < num_trk; j++){
-      for(int i = 0; i < N_INPUT_1_1; i++){
-        getline(file, sa);
-        in1[i + N_INPUT_1_1 * j] = std::stof(sa);
-      }
-      if((j+1)*N_INPUT_1_1 >= number_lines_in_file){
-        // printf("reset\n");
-        file.seekg(file.beg);
-      }
-      for(int i = 0; i < N_INPUT_1_1 * skip_n; i++){
-        getline(file, sa);
+    int index = 0;
+    for(int j = 0; j < num_trk; j++)
+    {
+      getline(file, sa);
+      std::istringstream iss(sa);
+      std::string s;
+      while ( getline( iss, s, ' ' ) ) {
+        in1[index] = atof(s.c_str());
+        index++;
       }
     }
 
@@ -305,6 +297,11 @@ int main(int argc, char *argv[]) {
     track_timing_full[tid] = timingFPGA;
     track_timing_single[tid] = (1000*timingFPGA)/num_trk;
     printTiming("Finished %d us\n", begin);
+
+    for(int i = 0; i < N_LAYER_8 * num_trk; i++)
+    {
+      std::cout<<"out: "<<out1[i]<<std::endl;
+    }
 
     // std::cout << "Result: \n\n";
     // for(int j = 0; j < num_trk; j++){

@@ -1,15 +1,15 @@
 //Numpy array shape [1]
-//Min -0.305805921555
-//Max -0.305805921555
+//Min -0.360232114792
+//Max -0.360232114792
 //Number of zeros 0
 
 #ifndef B8_H_
 #define B8_H_
 
 #ifndef __SYNTHESIS__
-dense_2_bias_t b8[1];
+densenn4_dense_bias_t b8[1];
 #else
-dense_2_bias_t b8[1] = {-0.3058059216};
+densenn4_dense_bias_t b8[1] = {-0.36023211479187011719};
 #endif
 
 #endif

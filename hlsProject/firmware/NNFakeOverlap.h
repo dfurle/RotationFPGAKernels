@@ -9,14 +9,12 @@
 
 #include "globalDefines.h"
 
-namespace NN{
-
-extern "C"{
-
-void NNFakeOverlap(hls::vector<layer1_t,N_INPUT_1_1>& in1, hls::vector<result_t,N_LAYER_8>& out1);
-
-}
-
+namespace NN
+{
+    extern "C"
+    {
+        void NNFakeOverlap(hls::vector<input_t,N_INPUT_1_1>& in1, hls::vector<result_t,N_LAYER_8>& out1);
+    }
 }
 
 #endif

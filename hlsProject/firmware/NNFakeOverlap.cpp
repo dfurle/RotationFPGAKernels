@@ -5,7 +5,7 @@
 
 namespace NN{
 
-void NNFakeOverlap(hls::vector<layer1_t,N_INPUT_1_1>& in1, hls::vector<result_t,N_LAYER_8>& out1){
+void NNFakeOverlap(hls::vector<input_t,N_INPUT_1_1>& in1, hls::vector<result_t,N_LAYER_8>& out1){
   #pragma HLS INLINE off
   #pragma HLS PIPELINE
 
@@ -15,7 +15,7 @@ void NNFakeOverlap(hls::vector<layer1_t,N_INPUT_1_1>& in1, hls::vector<result_t,
   // hls-fpga-machine-learning insert layers
   layer2_t layer2_out[N_LAYER_2];
   #pragma HLS ARRAY_PARTITION variable = layer2_out complete dim = 0
-  nnet::dense<layer1_t, layer2_t, config2>(in1.begin(), layer2_out, w2, b2); // dense
+  nnet::dense<input_t, layer2_t, config2>(in1.begin(), layer2_out, w2, b2); // dense
 
   layer3_t layer3_out[N_LAYER_2];
   #pragma HLS ARRAY_PARTITION variable=layer3_out complete dim=0

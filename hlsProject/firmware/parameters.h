@@ -17,6 +17,7 @@
 
 namespace NN{
 // hls-fpga-machine-learning insert weights
+#define __SYNTHESIS__
 #include "weights/w2.h"
 #include "weights/b2.h"
 #include "weights/s4.h"
@@ -27,34 +28,34 @@ namespace NN{
 #include "weights/b7.h"
 #include "weights/w8.h"
 #include "weights/b8.h"
-
-// hls-fpga-machine-learning insert layer-config
-// dense
+#undef __SYNTHESIS__
+/// hls-fpga-machine-learning insert layer-config
+// DenseNN0_Dense
 struct config2 : nnet::dense_config {
-    static const unsigned n_in = 24;
+    static const unsigned n_in = 15;
     static const unsigned n_out = 64;
     static const unsigned io_type = nnet::io_parallel;
     static const unsigned strategy = nnet::latency;
     static const unsigned reuse_factor = 1;
-    static const unsigned n_zeros = 0;
-    static const unsigned n_nonzeros = 1536;
+    static const unsigned n_zeros = 672;
+    static const unsigned n_nonzeros = 288;
     static const unsigned multiplier_limit = DIV_ROUNDUP(n_in * n_out, reuse_factor) - n_zeros / reuse_factor;
     static const bool store_weights_in_bram = false;
     typedef model_default_t accum_t;
-    typedef dense_bias_t bias_t;
-    typedef dense_weight_t weight_t;
+    typedef densenn0_dense_bias_t bias_t;
+    typedef densenn0_dense_weight_t weight_t;
     typedef layer2_index index_t;
     template<class x_T, class y_T>
     using product = nnet::product::mult<x_T, y_T>;
 };
 
-// dense_relu
+// DenseNN0_Dense_relu
 struct relu_config3 : nnet::activ_config {
     static const unsigned n_in = 64;
     static const unsigned table_size = 1024;
     static const unsigned io_type = nnet::io_parallel;
     static const unsigned reuse_factor = 1;
-    typedef dense_relu_table_t table_t;
+    typedef DenseNN0_Dense_relu_table_t table_t;
 };
 
 // batch_normalization
@@ -72,32 +73,32 @@ struct config4 : nnet::batchnorm_config {
     using product = nnet::product::mult<x_T, y_T>;
 };
 
-// dense_1
+// DenseNN2_Dense
 struct config5 : nnet::dense_config {
     static const unsigned n_in = 64;
     static const unsigned n_out = 32;
     static const unsigned io_type = nnet::io_parallel;
     static const unsigned strategy = nnet::latency;
     static const unsigned reuse_factor = 1;
-    static const unsigned n_zeros = 0;
-    static const unsigned n_nonzeros = 2048;
+    static const unsigned n_zeros = 1434;
+    static const unsigned n_nonzeros = 614;
     static const unsigned multiplier_limit = DIV_ROUNDUP(n_in * n_out, reuse_factor) - n_zeros / reuse_factor;
     static const bool store_weights_in_bram = false;
     typedef model_default_t accum_t;
-    typedef dense_1_bias_t bias_t;
-    typedef dense_1_weight_t weight_t;
+    typedef densenn2_dense_bias_t bias_t;
+    typedef densenn2_dense_weight_t weight_t;
     typedef layer5_index index_t;
     template<class x_T, class y_T>
     using product = nnet::product::mult<x_T, y_T>;
 };
 
-// dense_1_relu
+// DenseNN2_Dense_relu
 struct relu_config6 : nnet::activ_config {
     static const unsigned n_in = 32;
     static const unsigned table_size = 1024;
     static const unsigned io_type = nnet::io_parallel;
     static const unsigned reuse_factor = 1;
-    typedef dense_1_relu_table_t table_t;
+    typedef DenseNN2_Dense_relu_table_t table_t;
 };
 
 // batch_normalization_1
@@ -115,33 +116,34 @@ struct config7 : nnet::batchnorm_config {
     using product = nnet::product::mult<x_T, y_T>;
 };
 
-// dense_2
+// DenseNN4_Dense
 struct config8 : nnet::dense_config {
     static const unsigned n_in = 32;
     static const unsigned n_out = 1;
     static const unsigned io_type = nnet::io_parallel;
     static const unsigned strategy = nnet::latency;
     static const unsigned reuse_factor = 1;
-    static const unsigned n_zeros = 0;
-    static const unsigned n_nonzeros = 32;
+    static const unsigned n_zeros = 22;
+    static const unsigned n_nonzeros = 10;
     static const unsigned multiplier_limit = DIV_ROUNDUP(n_in * n_out, reuse_factor) - n_zeros / reuse_factor;
     static const bool store_weights_in_bram = false;
     typedef model_default_t accum_t;
-    typedef dense_2_bias_t bias_t;
-    typedef dense_2_weight_t weight_t;
+    typedef densenn4_dense_bias_t bias_t;
+    typedef densenn4_dense_weight_t weight_t;
     typedef layer8_index index_t;
     template<class x_T, class y_T>
     using product = nnet::product::mult<x_T, y_T>;
 };
 
-// dense_2_sigmoid
+// DenseNN4_Dense_sigmoid
 struct sigmoid_config9 : nnet::activ_config {
     static const unsigned n_in = 1;
     static const unsigned table_size = 1024;
     static const unsigned io_type = nnet::io_parallel;
     static const unsigned reuse_factor = 1;
-    typedef dense_2_sigmoid_table_t table_t;
+    typedef DenseNN4_Dense_sigmoid_table_t table_t;
 };
+
 
 }
 
