@@ -6,7 +6,7 @@
 #ifndef B8_H_
 #define B8_H_
 
-#ifndef __SYNTHESIS__
+#ifndef ADDWEIGHT
 densenn4_dense_bias_t b8[1];
 #else
 densenn4_dense_bias_t b8[1] = {-0.36023211479187011719};

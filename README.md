@@ -84,8 +84,8 @@ Thus the final setup is having two functions act as virtual kernels to the "top"
 
 - ! ! ! Important, when running `sw_emu`:
   - inside `hlsProject/firmware/parameters.h`
-  - uncomment the `#define __SYNTHESIS__` and `#undef __SYNTHESIS__` around the weight includes
-  - reason: during `sw_emu` it doesn't set the `__SYNTHESIS__` define, thus the weights are never initialized and will be `0`. There used to be code to read from text files, but it is simpler to just leave it as is without the extra text files.
+  - uncomment the `#define ADDWEIGHT` and `#undef ADDWEIGHT` around the weight includes
+  - reason: during `sw_emu` it doesn't set the `ADDWEIGHT` define, thus the weights are never initialized and will be `0`. There used to be code to read from text files, but it is simpler to just leave it as is without the extra text files.
   - reason #2: I decided I would rather add the #defines around the includes than go into each weight.h file manually to remove the #ifdefs, since this project could be made to regenerate later on
   - if this is tedious, just go into each weight.h file under `hlsProject/firmware/weights/*.h` and remove the #ifdefs and the weight declaration, and just leave the one with definition initialization
 - `./runner/config.cfg` contains some commented out lines about clocks, having anything somehow freezes hw_emu...

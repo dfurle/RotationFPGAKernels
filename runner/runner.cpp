@@ -1,13 +1,14 @@
-#include "globalDefines.h"
+#include "runner.h"
 #include <iostream>
 
-#include "NNFakeOverlap.h"
+
+#include "firmware/NNFakeOverlap.h"
 #include "rotationKernel.h"
 
 
 extern "C" {
 
-  void runner(input_raw_t* in1_gmem, result_t* out1_gmem, int number_tracks)
+  void runner(NN::input_raw_t* in1_gmem, NN::result_t* out1_gmem, int number_tracks)
   {
     // #pragma HLS INTERFACE s_axilite port=return bundle=runner_port
     // #pragma HLS INTERFACE m_axi port=in1_gmem  offset=slave bundle=input
@@ -26,10 +27,7 @@ extern "C" {
     {
       // #pragma HLS PIPELINE off
       #pragma HLS PIPELINE II=3
-      hls::vector<input_raw_t,N_INPUT_1_1> in1_loc;
-
-      // input_raw_t buff[24];
-      // memcpy(buff, (const input_raw_t*) in1_gmem, 24 * sizeof(input_raw_t));
+      hls::vector<NN::input_raw_t,N_INPUT_1_1> in1_loc;
 
       READ_DATA:
       for(int i = 0; i < N_INPUT_1_1; i++){
@@ -41,9 +39,8 @@ extern "C" {
       hls::vector<NN::input_t,N_INPUT_1_1> rot_loc;
       rotationKernel(in1_loc, rot_loc);
 
-      hls::vector<result_t,N_LAYER_8> out1_loc;
+      hls::vector<NN::result_t,N_LAYER_8> out1_loc;
       NN::NNFakeOverlap(rot_loc, out1_loc);
-      // out1_loc[0] = in1_loc[0];
 
       WRITE_DATA:
       for(int i = 0; i < N_LAYER_8; i++){

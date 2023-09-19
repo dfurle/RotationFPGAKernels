@@ -5,9 +5,11 @@
 #include "ap_int.h"
 #include "hls_stream.h"
 
-#include "defines.h"
+#ifndef HOST
+    #include "hls_vector.h"
+#endif
 
-#include "globalDefines.h"
+#include "defines.h"
 
 namespace NN
 {

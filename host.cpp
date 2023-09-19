@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #define HOST
 
-#include "globalDefines.h"
+#include "runner.h"
 
 // #include "ap_fixed.h"
 
@@ -73,8 +73,7 @@ int printTiming(std::string str, std::chrono::_V2::system_clock::time_point& beg
 // #define DOPRINT
 // #define PRINT_INNER_TIMINGS
 
-// void runFPGA(cl::CommandQueue& q, cl::Kernel& kernel, cl::Buffer buffer_a, cl::Buffer& buffer_result, input_raw_t *ptr_a, result_t *ptr_result, float *in1, float *out1){
-void runFPGA(cl::CommandQueue& q, cl::Kernel& kernel, cl::Buffer buffer_a, cl::Buffer& buffer_result, input_raw_t *ptr_a, result_t *ptr_result, input_raw_t *in1, result_t *out1, size_t in_size, size_t out_nn_size, int num_trk){
+void runFPGA(cl::CommandQueue& q, cl::Kernel& kernel, cl::Buffer buffer_a, cl::Buffer& buffer_result, NN::input_raw_t *ptr_a, NN::result_t *ptr_result, NN::input_raw_t *in1, NN::result_t *out1, size_t in_size, size_t out_nn_size, int num_trk){
 
   #ifdef PRINT_INNER_TIMINGS
   auto begin = std::chrono::high_resolution_clock::now();
@@ -156,22 +155,21 @@ void runFPGA(cl::CommandQueue& q, cl::Kernel& kernel, cl::Buffer buffer_a, cl::B
 }
 
 
-// void setupRun(cl::Program& program, cl::Context& context, cl::CommandQueue& q, float *in1, float *out1){
-int setupRun(cl::Program& program, cl::Context& context, cl::CommandQueue& q, input_raw_t *in1, result_t *out1, int num_trk){
+int setupRun(cl::Program& program, cl::Context& context, cl::CommandQueue& q, NN::input_raw_t *in1, NN::result_t *out1, int num_trk){
   auto begin = std::chrono::high_resolution_clock::now();
 
-  size_t in_size = sizeof(input_raw_t) * N_INPUT_1_1 * num_trk;
+  size_t in_size = sizeof(NN::input_raw_t) * N_INPUT_1_1 * num_trk;
   cl::Buffer buffer_a(context, CL_MEM_READ_ONLY, in_size);
 
   printTiming("Buffer In:\n  %d us\n", begin);
 
-  input_raw_t *ptr_a = (input_raw_t *)q.enqueueMapBuffer(buffer_a, CL_TRUE, CL_MAP_WRITE, 0, in_size);
+  NN::input_raw_t *ptr_a = (NN::input_raw_t *)q.enqueueMapBuffer(buffer_a, CL_TRUE, CL_MAP_WRITE, 0, in_size);
 
   printTiming("EnqueueMap In:\n  %d us\n", begin);
 
-  size_t out_nn_size = sizeof(result_t) * N_LAYER_8 * num_trk;
+  size_t out_nn_size = sizeof(NN::result_t) * N_LAYER_8 * num_trk;
   cl::Buffer buffer_result(context, CL_MEM_WRITE_ONLY, out_nn_size);
-  result_t *ptr_result = (result_t *)q.enqueueMapBuffer(buffer_result, CL_TRUE, CL_MAP_READ, 0, out_nn_size);
+  NN::result_t *ptr_result = (NN::result_t *)q.enqueueMapBuffer(buffer_result, CL_TRUE, CL_MAP_READ, 0, out_nn_size);
 
   printTiming("EnqueueMap Out:\n  %d us\n", begin);
 
@@ -252,10 +250,10 @@ int main(int argc, char *argv[]) {
     int num_trk = number_tracks[tid];
     printf("\n\n\nRunning with %d tracks\n", num_trk);
     
-    std::ifstream file("tb_input_features_original.dat");
+    std::ifstream file("../runner/tb_data/tb_input_features_original.dat");
     std::string sa;
 
-    input_raw_t* in1 = new input_raw_t[N_INPUT_1_1 * num_trk];
+    NN::input_raw_t* in1 = new NN::input_raw_t[N_INPUT_1_1 * num_trk];
 
     int skip_first = 0; // skip first few tracks
 
@@ -288,8 +286,7 @@ int main(int argc, char *argv[]) {
 
     printTiming("Read File and Convert\n  %d us \n", begin);
 
-    // float* out1 = new float[N_LAYER_8 * num_trk];
-    result_t* out1 = new result_t[N_LAYER_8 * num_trk];
+    NN::result_t* out1 = new NN::result_t[N_LAYER_8 * num_trk];
     printf("\nRUNNING FPGA\n\n");
 
     printTiming("Init out1\n  %d us \n", begin);
@@ -298,14 +295,14 @@ int main(int argc, char *argv[]) {
     track_timing_single[tid] = (1000*timingFPGA)/num_trk;
     printTiming("Finished %d us\n", begin);
 
-    // std::cout << "Result: \n\n";
-    // for(int j = 0; j < num_trk; j++){
-    //   for(int i = 0; i < N_LAYER_8; i++){
-    //     std::cout << float(out1[i + N_LAYER_8 * j]) << " ";
-    //   }
-    //   std::cout << std::endl;
-    // }
-    // printTiming("Printing %d us\n", begin);
+    std::cout << "Result: \n\n";
+    for(int j = 0; j < num_trk; j++){
+      for(int i = 0; i < N_LAYER_8; i++){
+        std::cout << float(out1[i + N_LAYER_8 * j]) << " ";
+      }
+      std::cout << std::endl;
+    }
+    printTiming("Printing %d us\n", begin);
   }
 
   printf("\n\n");

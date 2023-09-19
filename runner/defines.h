@@ -13,15 +13,14 @@ namespace NN
     // hls-fpga-machine-learning insert numbers
     #define N_INPUT_1_1 15
     #define N_LAYER_2 64
-    #define N_LAYER_2 64
-    #define N_LAYER_2 64
     #define N_LAYER_5 32
-    #define N_LAYER_5 32
-    #define N_LAYER_5 32
-    #define N_LAYER_8 1
     #define N_LAYER_8 1
 
+    #define NHITS 5
+
+
     // hls-fpga-machine-learning insert layer-precision
+    typedef float input_raw_t;
     typedef ap_fixed<24,8> input_t;
     typedef ap_fixed<24,8> model_default_t;
     typedef ap_fixed<24,8> layer2_t;
@@ -48,6 +47,7 @@ namespace NN
     typedef ap_uint<1> layer8_index;
     typedef ap_fixed<24,8,AP_RND,AP_SAT> result_t;
     typedef ap_fixed<18,8> DenseNN4_Dense_sigmoid_table_t;
+
 
 }
 
