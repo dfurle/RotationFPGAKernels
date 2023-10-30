@@ -3,12 +3,17 @@
 
 #include "ap_fixed.h"
 #include "ap_int.h"
-#include "nnet_utils/nnet_types.h"
+// #include "nnet_utils/nnet_types.h"
 #include <cstddef>
 #include <cstdio>
 
 namespace NN
 {
+
+    #define INPUTTRACKSIZE 100
+    #define STREAMWORDSIZE 512
+    
+    typedef ap_uint<STREAMWORDSIZE>  streamData_type;
 
     // hls-fpga-machine-learning insert numbers
     #define N_INPUT_1_1 15
